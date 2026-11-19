@@ -3,33 +3,27 @@
 ## Implementado
 
 - Projeto Swift Package modular e projeto Xcode para iOS.
-- `RuntimeBrowser` com classes, superclasses, métodos, selectors, type encodings e propriedades Objective-C.
-- `ObjectInspector` com ivars e descrições seguras.
-- `ViewHierarchyInspector` para árvore e seleção de UIViews.
-- `InspectorSession` isolada no MainActor.
-- `PreferencesStore` persistente.
-- Painel SwiftUI demonstrativo.
-- Testes unitários portáveis.
-- Workflow GitHub Actions para build iOS de simulador e upload do artefato.
+- `FLEXReplicaCore` é um produto dinâmico com `RuntimeBrowser`, `ObjectInspector`, `ViewHierarchyInspector`, `InspectorSession` e `PreferencesStore`.
+- Painel SwiftUI demonstrativo separado no app-demo.
+- Script e workflow macOS para compilar dylibs para iPhone arm64 e simulador arm64.
 
-## Build concluído
+## Dylibs compiladas
 
-- O target `FLEXReplicaDemo` compilou com sucesso para iOS Simulator no GitHub Actions, usando macOS runner, Xcode 26.6 e SDK iPhoneSimulator 26.5.
-- Execução: [GitHub Actions #44636780313](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44636780313).
-- Artefato `FLEXReplicaDemo-simulator-app` empacotado como `FLEXReplicaDemo-simulator.zip`; a execução guarda o artefato por 30 dias.
-- O ZIP foi baixado e a integridade foi verificada nesta entrega.
+- `libFLEXReplicaCore.dylib` para iPhone arm64, iOS 16.0+.
+- `libFLEXReplicaCore.dylib` para simulador iOS arm64.
+- Execução CI aprovada: [GitHub Actions #44638141575](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44638141575).
+- O pacote `FLEXReplicaCore-dylibs` foi baixado; ambos os binários foram verificados como Mach-O arm64 dinamicamente vinculados e o ZIP passou na verificação de integridade.
 
 ## Ainda não verificado
 
-- Os testes XCTest não foram executados: o projeto não contém scheme Xcode compartilhado para a ação `test`. O script atual compila o app, mas não executa esses testes.
-- Inicialização e inspeção visual do app no simulador.
-- Execução em dispositivo físico, assinatura de desenvolvimento e geração de IPA.
-- Descoberta de classes e views em runtime dentro de um app real.
+- Testes XCTest e execução em dispositivo/simulador.
+- Carregamento da dylib em um app hospedeiro real.
+- Assinatura e distribuição de um `.ipa`.
 
-## Limitação do artefato
+## Escopo do binário
 
-O arquivo produzido é um app de simulador iOS, não um `.ipa` assinado para instalação em iPhone. A instalação em dispositivo exige uma identidade de assinatura Apple do desenvolvedor.
+A dylib contém o core de inspeção; o painel SwiftUI permanece no app-demo. Não existe carregador, hook ou mecanismo de injeção automática. Para uso em um app próprio, a biblioteca precisa ser incorporada e assinada pelo app hospedeiro. O artefato não é um `.app` nem um `.ipa`.
 
 ## Auditoria funcional estática — 2026-11-19
 
-Foram corrigidos problemas encontrados no escopo funcional. O navegador busca classes por nome, diferencia métodos de instância e de classe e percorre propriedades herdadas sem duplicá-las. O inspetor separa ivars de propriedades e evita interpretar ivars escalares como objetos. A seleção de views usa coordenadas locais de forma consistente, com sobrecarga explícita para coordenadas de janela. A sessão publica resultados de busca e seleção; o painel SwiftUI lista classes, propriedades e métodos e persiste a opacidade.
+O navegador busca classes por nome, diferencia métodos de instância e de classe e percorre propriedades herdadas sem duplicá-las. O inspetor separa ivars de propriedades e evita interpretar ivars escalares como objetos. A seleção de views usa coordenadas locais de forma consistente, com sobrecarga explícita para coordenadas de janela. A sessão publica resultados de busca e seleção; o painel SwiftUI lista classes, propriedades e métodos e persiste a opacidade.
