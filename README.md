@@ -19,9 +19,9 @@ Projeto independente inspirado em ferramentas de inspeção de runtime. Não con
 - Não há mecanismo de injeção em processos de terceiros.
 - Não há hooks Substrate, stubs de `MSHookMessageEx` ou alteração de IPA.
 - Não há edição arbitrária de memória.
-- O projeto não foi compilado neste ambiente: Linux não possui Xcode, UIKit executável ou simulador iOS.
+- Este sandbox Linux não possui Xcode; o target `FLEXReplicaDemo` foi compilado para iOS Simulator no GitHub Actions [#44636780313](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44636780313).
 - A inspeção real de views precisa ser executada em um app-demo em iOS.
-- O `FLEXReplicaPanel` é uma interface funcional de demonstração, mas ainda precisa ser hospedado em um projeto Xcode iOS para teste visual.
+- O painel está hospedado no app-demo; a interação visual ainda não foi verificada executando o app.
 
 ## Build reproduzível em macOS/Xcode
 
@@ -32,7 +32,7 @@ chmod +x Scripts/build_ios.sh
 ./Scripts/build_ios.sh
 ```
 
-O script falha explicitamente se `xcodebuild` não estiver disponível. Para um build iOS real, crie/abra um workspace Xcode que inclua este Swift Package, configure um target iOS para `FLEXReplicaDemo`, assine com uma identidade de desenvolvimento e execute em simulador ou dispositivo.
+O script falha explicitamente se `xcodebuild` não estiver disponível e compila o app para iOS Simulator. Os testes XCTest ainda não são executados pelo script porque o projeto não inclui um scheme Xcode compartilhado. O artefato de simulador não é um `.ipa`; para instalar em iPhone, configure uma identidade de desenvolvimento e compile/assine para dispositivo no Xcode.
 
 ## Limitações de segurança e escopo
 
