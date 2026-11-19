@@ -83,9 +83,10 @@ public final class RuntimeBrowser {
         return (0..<Int(count)).map { index in
             let method = methods[index]
             let selector = method_getName(method)
+            let encoding = method_getTypeEncoding(method).map { String(cString: $0) } ?? ""
             return RuntimeMethodInfo(id: "\(className)::\(NSStringFromSelector(selector))",
                                      selector: NSStringFromSelector(selector),
-                                     typeEncoding: String(cString: method_getTypeEncoding(method)),
+                                     typeEncoding: encoding,
                                      isClassMethod: classMethods)
         }.sorted { $0.selector < $1.selector }
     }
@@ -101,7 +102,8 @@ public final class RuntimeBrowser {
                     let property = properties[index]
                     let name = String(cString: property_getName(property))
                     guard seen.insert(name).inserted else { continue }
-                    let attributes = String(cString: property_getAttributes(property))
+                    guard let attributesPointer = property_getAttributes(property) else { continue }
+                    let attributes = String(cString: attributesPointer)
                     result.append(RuntimePropertyInfo(id: "\(NSStringFromClass(type))::\(name)", name: name, attributes: attributes))
                 }
                 free(properties)
