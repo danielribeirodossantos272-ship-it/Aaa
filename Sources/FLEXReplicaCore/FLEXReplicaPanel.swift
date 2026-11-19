@@ -1,10 +1,8 @@
 import SwiftUI
-#if canImport(FLEXReplicaCore)
-import FLEXReplicaCore
-#endif
 
 @MainActor
 public struct FLEXReplicaPanel: View {
+    @Environment(\.dismiss) private var dismiss
     @StateObject private var session = InspectorSession()
     @State private var query = "UIView"
     @State private var opacity = InspectorPreferences().panelOpacity
@@ -19,6 +17,8 @@ public struct FLEXReplicaPanel: View {
                 Text("FLEX Replica").font(.headline)
                 Spacer()
                 Text("Independent").font(.caption).foregroundStyle(.secondary)
+                Button("Close") { dismiss() }
+                    .buttonStyle(.bordered)
             }
 
             HStack {

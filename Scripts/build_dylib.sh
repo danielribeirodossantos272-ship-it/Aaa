@@ -28,6 +28,7 @@ build_dylib() {
 
   mkdir -p "$ROOT/dist/$variant"
   cp "$dylib_path" "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
+  cp "$ROOT/include/FLEXReplicaCore.h" "$ROOT/dist/$variant/FLEXReplicaCore.h"
   file "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
 }
 
