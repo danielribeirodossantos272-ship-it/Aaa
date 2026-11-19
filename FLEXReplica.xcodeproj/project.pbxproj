@@ -52,8 +52,8 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		E10000010000000000000001 /* FLEXReplicaDemo */ = {isa = PBXNativeTarget; buildConfigurationList = F10000010000000000000001; buildPhases = (C10000010000000000000003,C10000010000000000000001,C10000010000000000000004,); buildRules = ( ); dependencies = ( ); name = FLEXReplicaDemo; productName = FLEXReplicaDemo; productReference = B10000010000000000000009; productType = "com.apple.product-type.application"; };
-		E10000010000000000000002 /* FLEXReplicaTests */ = {isa = PBXNativeTarget; buildConfigurationList = F10000010000000000000002; buildPhases = (C10000010000000000000005,C10000010000000000000002,C10000010000000000000006,); buildRules = ( ); dependencies = ( ); name = FLEXReplicaTests; productName = FLEXReplicaTests; productReference = B1000001000000000000000B; productType = "com.apple.product-type.bundle.unit-test"; };
+		E10000010000000000000001 /* FLEXReplicaDemo */ = {isa = PBXNativeTarget; buildConfigurationList = F20000010000000000000001; buildPhases = (C10000010000000000000003,C10000010000000000000001,C10000010000000000000004,); buildRules = ( ); dependencies = ( ); name = FLEXReplicaDemo; productName = FLEXReplicaDemo; productReference = B10000010000000000000009; productType = "com.apple.product-type.application"; };
+		E10000010000000000000002 /* FLEXReplicaTests */ = {isa = PBXNativeTarget; buildConfigurationList = F20000010000000000000002; buildPhases = (C10000010000000000000005,C10000010000000000000002,C10000010000000000000006,); buildRules = ( ); dependencies = ( ); name = FLEXReplicaTests; productName = FLEXReplicaTests; productReference = B1000001000000000000000B; productType = "com.apple.product-type.bundle.unit-test"; };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
