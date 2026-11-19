@@ -1,5 +1,7 @@
 import XCTest
+#if canImport(FLEXReplicaCore)
 @testable import FLEXReplicaCore
+#endif
 
 final class FLEXReplicaCoreTests: XCTestCase {
     func testPreferencesRoundTrip() {

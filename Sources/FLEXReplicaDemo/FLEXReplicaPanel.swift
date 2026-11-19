@@ -1,5 +1,7 @@
 import SwiftUI
+#if canImport(FLEXReplicaCore)
 import FLEXReplicaCore
+#endif
 
 @MainActor
 public struct FLEXReplicaPanel: View {
