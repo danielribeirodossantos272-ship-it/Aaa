@@ -29,6 +29,13 @@ build_dylib() {
   mkdir -p "$ROOT/dist/$variant"
   cp "$dylib_path" "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
   cp "$ROOT/include/FLEXReplicaCore.h" "$ROOT/dist/$variant/FLEXReplicaCore.h"
+  local symbols
+  symbols="$(xcrun nm -gU "$ROOT/dist/$variant/libFLEXReplicaCore.dylib")"
+  if ! grep -q 'FLEXReplicaShowMenu$' <<<"$symbols"; then
+    echo "O símbolo FLEXReplicaShowMenu não foi exportado em $variant." >&2
+    exit 1
+  fi
+  echo "FLEXReplicaShowMenu exportado em $variant."
   file "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
 }
 
