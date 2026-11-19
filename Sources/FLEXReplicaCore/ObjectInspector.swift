@@ -77,10 +77,9 @@ public final class ObjectInspector {
             if let properties = class_copyPropertyList(type, &count) {
                 for index in 0..<Int(count) {
                     let property = properties[index]
-                    guard let namePointer = property_getName(property),
-                          let attributesPointer = property_getAttributes(property) else { continue }
-                    let name = String(cString: namePointer)
+                    let name = String(cString: property_getName(property))
                     guard seen.insert(name).inserted else { continue }
+                    guard let attributesPointer = property_getAttributes(property) else { continue }
                     let attributes = String(cString: attributesPointer)
                     let candidates = ["_\(name)", name]
                     let fieldValue = fields.first { candidates.contains($0.name) }?.valueDescription ?? "<accessor not read>"
