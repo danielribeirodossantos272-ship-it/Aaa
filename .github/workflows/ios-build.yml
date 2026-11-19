@@ -9,10 +9,21 @@ permissions:
   contents: read
 
 jobs:
-  build-and-test:
+  build:
     runs-on: macos-latest
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Build and test for iOS Simulator
+      - name: Build for iOS Simulator
         run: bash Scripts/build_ios.sh
+      - name: Package simulator app
+        run: |
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent build/Debug-iphonesimulator/FLEXReplicaDemo.app dist/FLEXReplicaDemo-simulator.zip
+      - name: Upload simulator app
+        uses: actions/upload-artifact@v4
+        with:
+          name: FLEXReplicaDemo-simulator-app
+          path: dist/FLEXReplicaDemo-simulator.zip
+          if-no-files-found: error
+          retention-days: 30

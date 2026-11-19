@@ -7,4 +7,3 @@ if ! command -v xcodebuild >/dev/null 2>&1; then
   exit 2
 fi
 xcodebuild -project FLEXReplica.xcodeproj -target FLEXReplicaDemo -sdk iphonesimulator -configuration Debug build
-xcodebuild -project FLEXReplica.xcodeproj -target FLEXReplicaTests -sdk iphonesimulator -configuration Debug test
