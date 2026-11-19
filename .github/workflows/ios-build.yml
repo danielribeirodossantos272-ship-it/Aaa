@@ -1,4 +1,4 @@
-name: iOS Build
+name: iOS Dylib Build
 
 on:
   push:
@@ -14,16 +14,15 @@ jobs:
     steps:
       - name: Check out source
         uses: actions/checkout@v4
-      - name: Build for iOS Simulator
-        run: bash Scripts/build_ios.sh
-      - name: Package simulator app
+      - name: Build device and simulator dylibs
+        run: bash Scripts/build_dylib.sh
+      - name: Package dylibs
         run: |
-          mkdir -p dist
-          ditto -c -k --sequesterRsrc --keepParent build/Debug-iphonesimulator/FLEXReplicaDemo.app dist/FLEXReplicaDemo-simulator.zip
-      - name: Upload simulator app
+          ditto -c -k --sequesterRsrc --keepParent dist ios-dylibs.zip
+      - name: Upload dylib package
         uses: actions/upload-artifact@v4
         with:
-          name: FLEXReplicaDemo-simulator-app
-          path: dist/FLEXReplicaDemo-simulator.zip
+          name: FLEXReplicaCore-dylibs
+          path: ios-dylibs.zip
           if-no-files-found: error
           retention-days: 30

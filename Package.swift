@@ -5,7 +5,7 @@ let package = Package(
     name: "FLEXReplica",
     platforms: [.iOS(.v16)],
     products: [
-        .library(name: "FLEXReplicaCore", targets: ["FLEXReplicaCore"]),
+        .library(name: "FLEXReplicaCore", type: .dynamic, targets: ["FLEXReplicaCore"]),
         .executable(name: "FLEXReplicaDemo", targets: ["FLEXReplicaDemo"])
     ],
     targets: [
