@@ -1,0 +1,89 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000010000000000000001 /* InspectorSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000001 /* InspectorSession.swift */; };
+		A10000010000000000000002 /* ObjectInspector.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000002 /* ObjectInspector.swift */; };
+		A10000010000000000000003 /* PreferencesStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000003 /* PreferencesStore.swift */; };
+		A10000010000000000000004 /* RuntimeBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000004 /* RuntimeBrowser.swift */; };
+		A10000010000000000000005 /* ViewHierarchy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000005 /* ViewHierarchy.swift */; };
+		A10000010000000000000006 /* FLEXReplicaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000006 /* FLEXReplicaPanel.swift */; };
+		A10000010000000000000007 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000007 /* main.swift */; };
+		A10000010000000000000008 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000008 /* Info.plist */; };
+		A10000010000000000000009 /* InspectorSession.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000001 /* InspectorSession.swift */; };
+		A1000001000000000000000A /* ObjectInspector.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000002 /* ObjectInspector.swift */; };
+		A1000001000000000000000B /* PreferencesStore.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000003 /* PreferencesStore.swift */; };
+		A1000001000000000000000C /* RuntimeBrowser.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000004 /* RuntimeBrowser.swift */; };
+		A1000001000000000000000D /* ViewHierarchy.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000005 /* ViewHierarchy.swift */; };
+		A1000001000000000000000E /* FLEXReplicaCoreTests.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B1000001000000000000000A /* FLEXReplicaCoreTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		B10000010000000000000001 /* InspectorSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InspectorSession.swift; sourceTree = "<group>"; };
+		B10000010000000000000002 /* ObjectInspector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ObjectInspector.swift; sourceTree = "<group>"; };
+		B10000010000000000000003 /* PreferencesStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreferencesStore.swift; sourceTree = "<group>"; };
+		B10000010000000000000004 /* RuntimeBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeBrowser.swift; sourceTree = "<group>"; };
+		B10000010000000000000005 /* ViewHierarchy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewHierarchy.swift; sourceTree = "<group>"; };
+		B10000010000000000000006 /* FLEXReplicaPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FLEXReplicaPanel.swift; sourceTree = "<group>"; };
+		B10000010000000000000007 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		B10000010000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B10000010000000000000009 /* FLEXReplicaDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FLEXReplicaDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1000001000000000000000A /* FLEXReplicaCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FLEXReplicaCoreTests.swift; sourceTree = "<group>"; };
+		B1000001000000000000000B /* FLEXReplicaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FLEXReplicaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C10000010000000000000001 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = ( ); runOnlyForDeploymentPostprocessing = 0; };
+		C10000010000000000000002 /* Frameworks */ = {isa = PBXFrameworksBuildPhase; buildActionMask = 2147483647; files = ( ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D10000010000000000000001 = {isa = PBXGroup; children = (D10000010000000000000002,D10000010000000000000003,D10000010000000000000004,D10000010000000000000005,D10000010000000000000006,); sourceTree = "<group>"; };
+		D10000010000000000000002 /* FLEXReplicaCore */ = {isa = PBXGroup; children = (B10000010000000000000001,B10000010000000000000002,B10000010000000000000003,B10000010000000000000004,B10000010000000000000005,); path = Sources/FLEXReplicaCore; sourceTree = "<group>"; };
+		D10000010000000000000003 /* FLEXReplicaDemo */ = {isa = PBXGroup; children = (B10000010000000000000006,B10000010000000000000007,); path = Sources/FLEXReplicaDemo; sourceTree = "<group>"; };
+		D10000010000000000000004 /* DemoApp */ = {isa = PBXGroup; children = (B10000010000000000000008,); path = DemoApp; sourceTree = "<group>"; };
+		D10000010000000000000005 /* FLEXReplicaTests */ = {isa = PBXGroup; children = (B1000001000000000000000A,); path = Tests/FLEXReplicaCoreTests; sourceTree = "<group>"; };
+		D10000010000000000000006 /* Products */ = {isa = PBXGroup; children = (B10000010000000000000009,B1000001000000000000000B,); name = Products; sourceTree = "<group>"; };
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E10000010000000000000001 /* FLEXReplicaDemo */ = {isa = PBXNativeTarget; buildConfigurationList = F10000010000000000000001; buildPhases = (C10000010000000000000003,C10000010000000000000001,C10000010000000000000004,); buildRules = ( ); dependencies = ( ); name = FLEXReplicaDemo; productName = FLEXReplicaDemo; productReference = B10000010000000000000009; productType = "com.apple.product-type.application"; };
+		E10000010000000000000002 /* FLEXReplicaTests */ = {isa = PBXNativeTarget; buildConfigurationList = F10000010000000000000002; buildPhases = (C10000010000000000000005,C10000010000000000000002,C10000010000000000000006,); buildRules = ( ); dependencies = ( ); name = FLEXReplicaTests; productName = FLEXReplicaTests; productReference = B1000001000000000000000B; productType = "com.apple.product-type.bundle.unit-test"; };
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E10000010000000000000003 /* Project object */ = {isa = PBXProject; attributes = { LastUpgradeCheck = 1600; TargetAttributes = { E10000010000000000000001 = { CreatedOnToolsVersion = 16.0; }; E10000010000000000000002 = { CreatedOnToolsVersion = 16.0; TestTargetID = E10000010000000000000001; }; }; }; buildConfigurationList = F20000010000000000000003; compatibilityVersion = "Xcode 14.0"; developmentRegion = en; hasScannedForEncodings = 0; knownRegions = (en,Base,); mainGroup = D10000010000000000000001; productRefGroup = D10000010000000000000006; projectDirPath = ""; projectRoot = ""; targets = (E10000010000000000000001,E10000010000000000000002,); };
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C10000010000000000000004 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000008,); runOnlyForDeploymentPostprocessing = 0; };
+		C10000010000000000000006 /* Resources */ = {isa = PBXResourcesBuildPhase; buildActionMask = 2147483647; files = ( ); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C10000010000000000000003 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000001,A10000010000000000000002,A10000010000000000000003,A10000010000000000000004,A10000010000000000000005,A10000010000000000000006,A10000010000000000000007,); runOnlyForDeploymentPostprocessing = 0; };
+		C10000010000000000000005 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (A10000010000000000000009,A1000001000000000000000A,A1000001000000000000000B,A1000001000000000000000C,A1000001000000000000000D,A1000001000000000000000E,); runOnlyForDeploymentPostprocessing = 0; };
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F10000010000000000000001 /* Demo Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = DemoApp/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.FLEXReplicaDemo; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Debug; };
+		F10000010000000000000002 /* Demo Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; GENERATE_INFOPLIST_FILE = NO; INFOPLIST_FILE = DemoApp/Info.plist; IPHONEOS_DEPLOYMENT_TARGET = 16.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.FLEXReplicaDemo; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.9; TARGETED_DEVICE_FAMILY = "1,2"; }; name = Release; };
+		F10000010000000000000004 /* Tests Debug */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.FLEXReplicaTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.9; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FLEXReplicaDemo.app/FLEXReplicaDemo"; }; name = Debug; };
+		F10000010000000000000005 /* Tests Release */ = {isa = XCBuildConfiguration; buildSettings = { BUNDLE_LOADER = "$(TEST_HOST)"; CODE_SIGN_STYLE = Automatic; CURRENT_PROJECT_VERSION = 1; DEVELOPMENT_TEAM = ""; GENERATE_INFOPLIST_FILE = YES; IPHONEOS_DEPLOYMENT_TARGET = 16.0; PRODUCT_BUNDLE_IDENTIFIER = com.example.FLEXReplicaTests; PRODUCT_NAME = "$(TARGET_NAME)"; SWIFT_VERSION = 5.9; TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FLEXReplicaDemo.app/FLEXReplicaDemo"; }; name = Release; };
+		F10000010000000000000003 /* Project Debug */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; SWIFT_VERSION = 5.9; }; name = Debug; };
+		F10000010000000000000006 /* Project Release */ = {isa = XCBuildConfiguration; buildSettings = { ALWAYS_SEARCH_USER_PATHS = NO; SWIFT_VERSION = 5.9; }; name = Release; };
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F20000010000000000000001 /* Demo configs */ = {isa = XCConfigurationList; buildConfigurations = (F10000010000000000000001,F10000010000000000000002,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F20000010000000000000002 /* Test configs */ = {isa = XCConfigurationList; buildConfigurations = (F10000010000000000000004,F10000010000000000000005,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+		F20000010000000000000003 /* Project configs */ = {isa = XCConfigurationList; buildConfigurations = (F10000010000000000000003,F10000010000000000000006,); defaultConfigurationIsVisible = 0; defaultConfigurationName = Release; };
+/* End XCConfigurationList section */
+	};
+	rootObject = E10000010000000000000003 /* Project object */;
+}
