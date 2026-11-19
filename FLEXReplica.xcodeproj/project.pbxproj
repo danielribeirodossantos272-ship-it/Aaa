@@ -13,7 +13,7 @@
 		A10000010000000000000004 /* RuntimeBrowser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000004 /* RuntimeBrowser.swift */; };
 		A10000010000000000000005 /* ViewHierarchy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000005 /* ViewHierarchy.swift */; };
 		A10000010000000000000006 /* FLEXReplicaPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000006 /* FLEXReplicaPanel.swift */; };
-		A10000010000000000000007 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000007 /* main.swift */; };
+		A10000010000000000000007 /* FLEXReplicaDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000010000000000000007 /* FLEXReplicaDemoApp.swift */; };
 		A10000010000000000000009 /* InspectorSession.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000001 /* InspectorSession.swift */; };
 		A1000001000000000000000A /* ObjectInspector.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000002 /* ObjectInspector.swift */; };
 		A1000001000000000000000B /* PreferencesStore.swift in FLEXReplicaTests */ = {isa = PBXBuildFile; fileRef = B10000010000000000000003 /* PreferencesStore.swift */; };
@@ -29,7 +29,7 @@
 		B10000010000000000000004 /* RuntimeBrowser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuntimeBrowser.swift; sourceTree = "<group>"; };
 		B10000010000000000000005 /* ViewHierarchy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewHierarchy.swift; sourceTree = "<group>"; };
 		B10000010000000000000006 /* FLEXReplicaPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FLEXReplicaPanel.swift; sourceTree = "<group>"; };
-		B10000010000000000000007 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		B10000010000000000000007 /* FLEXReplicaDemoApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FLEXReplicaDemoApp.swift; sourceTree = "<group>"; };
 		B10000010000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B10000010000000000000009 /* FLEXReplicaDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FLEXReplicaDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1000001000000000000000A /* FLEXReplicaCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FLEXReplicaCoreTests.swift; sourceTree = "<group>"; };
