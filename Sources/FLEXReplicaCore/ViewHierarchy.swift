@@ -46,7 +46,7 @@ public final class ViewHierarchyInspector {
     private func makeNode(_ view: UIView) -> ViewNode {
         ViewNode(id: ObjectIdentifier(view).debugDescription,
                  className: NSStringFromClass(type(of: view)),
-                 frame: NSStringFromCGRect(view.frame),
+                 frame: NSCoder.string(for: view.frame),
                  isHidden: view.isHidden,
                  alpha: Double(view.alpha),
                  children: view.subviews.map(makeNode))

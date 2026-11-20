@@ -67,7 +67,7 @@ struct ViewDetailSheet: View {
                 Section {
                     Text(className).font(.system(.subheadline, design: .monospaced)).bold()
                     row("Address", selection.snapshot.address)
-                    row("Frame", NSStringFromCGRect(target.frame))
+                    row("Frame", NSCoder.string(for: target.frame))
                     row("Alpha / hidden", String(format: "%.2f / %@", Double(target.alpha), target.isHidden ? "yes" : "no"))
                     row("Background", target.backgroundColor.map { String(describing: $0) } ?? "nil")
                     row("Accessibility ID", target.accessibilityIdentifier ?? "nil")
@@ -107,7 +107,7 @@ struct ViewDetailSheet: View {
         Button { selection.select(view) } label: {
             VStack(alignment: .leading, spacing: 2) {
                 Text(NSStringFromClass(type(of: view))).font(.system(.footnote, design: .monospaced))
-                Text(NSStringFromCGRect(view.frame)).font(.caption2).foregroundStyle(.secondary)
+                Text(NSCoder.string(for: view.frame)).font(.caption2).foregroundStyle(.secondary)
             }
         }
     }
