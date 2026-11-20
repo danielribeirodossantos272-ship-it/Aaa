@@ -22,4 +22,4 @@ bash Scripts/build_dylib.sh
 
 O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
 
-A compilação CI da interface expandida está pendente após o commit atual. XCTest e execução visual em um app hospedeiro real não são afirmados como aprovados.
+A compilação CI da interface expandida foi aprovada: [GitHub Actions #44643782652](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44643782652). As duas dylibs e headers foram empacotados; `FLEXReplicaShowMenu` foi confirmado como símbolo exportado. XCTest e execução visual em um app hospedeiro real não foram realizados.

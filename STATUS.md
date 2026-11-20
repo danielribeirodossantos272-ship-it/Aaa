@@ -8,7 +8,7 @@ A interface é uma aproximação independente com código próprio; não houve i
 
 ## Build e validação
 
-A compilação CI desta revisão está pendente. O workflow deverá compilar as variantes arm64 de iPhone (iOS 16.0+) e simulador e confirmar o símbolo exportado. O build anterior aprovou apenas a versão anterior do painel; não o usar como validação desta UI ampliada.
+A compilação CI desta revisão foi aprovada em [GitHub Actions #44643782652](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44643782652). O workflow compilou as variantes arm64 de iPhone (iOS 16.0+) e simulador, empacotou os headers e confirmou com `nm` o símbolo `FLEXReplicaShowMenu` em ambas. O ZIP baixado passou na verificação de integridade.
 
 ## Integração e testes pendentes
 
