@@ -1,6 +1,6 @@
 # Status da entrega
 
-## Correção de strings — aguardando nova build
+## Correção de strings — build concluída
 
 - Aba **Patches** com criação de overrides inativos para propriedades Objective-C graváveis de tipos suportados (strings, números e booleanos).
 - A inspeção agora reconhece também propriedades graváveis com valor runtime `NSString`/`String`, mesmo quando o encoding declarado não informa diretamente `NSString`.
@@ -15,7 +15,7 @@ As fontes públicas oficiais do FLEX descrevem inspeção/edição de views e va
 
 ## Build e validação
 
-A versão anterior passou no workflow [#44654581512](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44654581512). A revisão de strings foi enviada para uma nova compilação arm64 de iPhone e iOS Simulator; XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
+O workflow [#44657623313](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44657623313) passou: compilou as dylibs arm64 de iPhone e iOS Simulator com a correção de detecção runtime de strings. O ZIP passou em `unzip -t` e os load commands indicam as plataformas certas. XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
 
 ## Limitações
 
