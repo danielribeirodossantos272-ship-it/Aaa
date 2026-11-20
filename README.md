@@ -6,7 +6,7 @@ Projeto próprio de inspeção de runtime, inspirado em ferramentas de developer
 
 - Busca de classes Objective-C, métodos, selectors, propriedades e type encodings.
 - Aba **Views** com hierarquia expansível, frames, alpha/hidden e seleção de uma view.
-- Aba **Object** com snapshot de propriedades/ivars e formulário limitado a propriedades Objective-C graváveis de tipo `NSString`, `NSNumber` ou valores escalares numéricos/booleanos reconhecidos.
+- Aba **Object** com snapshot de propriedades/ivars e editores para propriedades graváveis `NSString`/`NSNumber`, além de strings detectadas pelo valor em runtime e escalares numéricos/booleanos reconhecidos.
 - Aba **Patches**: cria uma entrada inativa para um valor substituto, mostra-a na lista e permite ativar, desativar ou remover. Ao ativar, registra o valor-base atual; ao desativar, restaura esse valor. Se o app tiver alterado a propriedade desde a ativação, a ferramenta preserva o valor atual em vez de sobrescrevê-lo.
 - Botão **FLEX** flutuante e arrastável, instalado depois que a dylib entra no processo e o app hospedeiro fica ativo. Tocar nele abre o painel; o painel deixa de surgir automaticamente.
 - Entrypoints C `FLEXReplicaInstallFloatingButton()` e `FLEXReplicaShowMenu()` no produto dinâmico `FLEXReplicaCore`.
@@ -38,4 +38,4 @@ bash Scripts/build_dylib.sh
 
 O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
 
-A build desta versão passou no GitHub Actions [#44654581512](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44654581512), compilando as variantes arm64 de iPhone e simulador e validando os entrypoints e a ponte de runtime. XCTest e execução em iPhone/app hospedeiro real ainda não foram realizados.
+A build anterior passou no GitHub Actions [#44654581512](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44654581512). A revisão para detectar strings pelo valor em runtime e facilitar o fluxo Create Patch está aguardando novo CI. XCTest e execução em iPhone/app hospedeiro real ainda não foram realizados.

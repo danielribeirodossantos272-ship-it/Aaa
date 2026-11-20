@@ -87,10 +87,15 @@ public final class ObjectInspector {
                     guard let attributesPointer = property_getAttributes(property) else { continue }
                     let attributes = String(cString: attributesPointer)
                     let writable = !attributes.split(separator: ",").contains("R")
-                    let kind = writable ? editableKind(from: attributes) : nil
+                    let runtimeValue = safePropertyValue(object: object, name: name)
+                    let declaredKind = editableKind(from: attributes)
+                    let runtimeStringKind: FLEXReplicaPropertyValueKind? = runtimeValue.map {
+                        ($0 as? NSString) != nil || ($0 as? String) != nil
+                    } == true ? .string : nil
+                    let kind = writable ? (declaredKind ?? runtimeStringKind) : nil
                     let candidates = ["_\(name)", name]
                     let fieldValue = fields.first { candidates.contains($0.name) }?.valueDescription ?? "<accessor not read>"
-                    let valueDescription = safePropertyDescription(object: object, name: name) ?? fieldValue
+                    let valueDescription = runtimeValue.map { String(describing: $0) } ?? fieldValue
                     result.append(InspectedProperty(id: "\(NSStringFromClass(type))::\(name)",
                                                      name: name,
                                                      attributes: attributes,
@@ -124,11 +129,11 @@ public final class ObjectInspector {
         return nil
     }
 
-    private func safePropertyDescription(object: AnyObject, name: String) -> String? {
+    private func safePropertyValue(object: AnyObject, name: String) -> AnyObject? {
         #if canImport(FLEXReplicaRuntimeBridge)
         var value: AnyObject?
         guard FLEXReplicaTryGetObjectValue(object, name, &value) else { return nil }
-        return value.map { String(describing: $0) } ?? "nil"
+        return value
         #else
         return nil
         #endif

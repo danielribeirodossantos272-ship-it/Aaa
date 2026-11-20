@@ -257,6 +257,9 @@ public struct FLEXReplicaPanel: View {
                         }
 
                         detailSection(title: "Properties (\(object.properties.count))") {
+                            Text("Para editar uma string, digite o novo texto e toque em Create Patch. Depois, ative ou desative o patch na aba Patches.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                             ForEach(object.properties) { property in
                                 VStack(alignment: .leading, spacing: 2) {
                                     Text(property.name).font(.caption.monospaced())
@@ -314,7 +317,7 @@ public struct FLEXReplicaPanel: View {
 
     private var patchesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Temporary property overrides")
+            Text("Temporary property overrides — use the switch to apply or restore each value")
                 .font(.subheadline.weight(.semibold))
             Text("Patches affect one selected object in this running app. They stay in memory and can be restored here.")
                 .font(.caption)

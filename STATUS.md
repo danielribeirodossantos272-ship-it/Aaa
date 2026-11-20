@@ -1,8 +1,9 @@
 # Status da entrega
 
-## Implementado no código-fonte — build concluído
+## Correção de strings — aguardando nova build
 
 - Aba **Patches** com criação de overrides inativos para propriedades Objective-C graváveis de tipos suportados (strings, números e booleanos).
+- A inspeção agora reconhece também propriedades graváveis com valor runtime `NSString`/`String`, mesmo quando o encoding declarado não informa diretamente `NSString`.
 - Cada patch fica ligado a um único objeto selecionado. Ativar aplica o novo valor; desativar tenta restaurar a base capturada ao ativar; remover apaga a entrada. Se o app mudar a propriedade no meio do caminho, a alteração externa é preservada para evitar sobrescrita.
 - As entradas ficam apenas em memória durante o processo e guardam o objeto por referência fraca; não são persistentes e não fazem reidentificação automática após reinício.
 - O inicializador da dylib agora instala um botão **FLEX** flutuante e arrastável depois que o app hospedeiro fica ativo; tocar no botão abre o painel. A abertura automática do painel foi removida.
@@ -14,7 +15,7 @@ As fontes públicas oficiais do FLEX descrevem inspeção/edição de views e va
 
 ## Build e validação
 
-O workflow [#44654581512](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44654581512) passou: compilou as dylibs arm64 para iPhone e iOS Simulator e validou os símbolos do botão, painel e ponte KVC. O ZIP foi baixado, testado com `unzip -t` e contém as duas variantes e seus headers. XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
+A versão anterior passou no workflow [#44654581512](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44654581512). A revisão de strings foi enviada para uma nova compilação arm64 de iPhone e iOS Simulator; XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
 
 ## Limitações
 
