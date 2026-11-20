@@ -39,4 +39,4 @@ bash Scripts/build_dylib.sh
 
 O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
 
-A revisão para detectar propriedades String pelo valor em runtime passou no GitHub Actions [#44657623313](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44657623313), gerando variantes arm64 de iPhone e simulador. XCTest e execução em iPhone/app hospedeiro real ainda não foram realizados.
+A versão com patches nomeados, persistência em `UserDefaults`, revinculação e toggles compilou com sucesso no GitHub Actions [#44662170057](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44662170057), gerando variantes arm64 de iPhone e simulador. XCTest e validação em iPhone/app hospedeiro real ainda não foram executados.

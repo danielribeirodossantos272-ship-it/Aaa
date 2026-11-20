@@ -1,6 +1,6 @@
 # Status da entrega
 
-## Edição de strings — build anterior concluída
+## Patches nomeados e persistentes — CI aprovado
 
 - Aba **Patches** com criação de overrides inativos para propriedades Objective-C graváveis de tipos suportados (strings, números e booleanos).
 - A inspeção agora reconhece também propriedades graváveis com valor runtime `NSString`/`String`, mesmo quando o encoding declarado não informa diretamente `NSString`.
@@ -15,7 +15,7 @@ As fontes públicas oficiais do FLEX descrevem inspeção/edição de views e va
 
 ## Build e validação
 
-O workflow [#44657623313](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44657623313) passou para a versão anterior, compilando as dylibs arm64 de iPhone e iOS Simulator. A nova atualização de patches nomeados/persistentes está pendente de build CI. XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
+O workflow [#44662170057](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44662170057) passou e compilou as dylibs arm64 de iPhone e iOS Simulator com a criação, persistência, nome e alternância de patches de propriedades. O ZIP do artefato foi verificado. XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
 
 ## Limitações
 
