@@ -229,6 +229,9 @@ public struct FLEXReplicaPanel: View {
                         .lineLimit(1)
                 }
             }
+            Text("Use a seta para expandir; toque no nome da view para selecioná-la. A UIWindow é apenas o contêiner.")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
             if let selected = session.selectedObject {
                 HStack {
                     Text("Selected: \(selected.className)")
@@ -240,13 +243,22 @@ public struct FLEXReplicaPanel: View {
                         .font(.caption)
                 }
             }
+            if let error = session.patchActionError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             Divider()
 
             #if canImport(UIKit)
             if let root = session.rootViewTree, let window = foregroundWindow {
                 ScrollView {
-                    ViewNodeRow(node: root, root: window, session: session)
-                        .padding(.vertical, 4)
+                    if root.children.isEmpty {
+                        emptyState("A janela ativa não expôs subviews. Atualize a hierarquia ou confirme a janela do app.", symbol: "rectangle.dashed")
+                    } else {
+                        ViewNodeRow(node: root, root: window, session: session)
+                            .padding(.vertical, 4)
+                    }
                 }
             } else {
                 emptyState("View hierarchy unavailable", symbol: "rectangle.dashed")
@@ -440,35 +452,63 @@ public struct FLEXReplicaPanel: View {
 private struct ViewNodeRow: View {
     let node: ViewNode
     let root: UIView
+    let depth: Int
     @ObservedObject var session: InspectorSession
-    @State private var isExpanded = false
+    @State private var isExpanded: Bool
+
+    init(node: ViewNode, root: UIView, session: InspectorSession, depth: Int = 0) {
+        self.node = node
+        self.root = root
+        self.session = session
+        self.depth = depth
+        self._isExpanded = State(initialValue: depth < 1)
+    }
 
     var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
-            ForEach(node.children) { child in
-                ViewNodeRow(node: child, root: root, session: session)
-                    .padding(.leading, 8)
-            }
-        } label: {
-            Button {
-                session.inspectView(withID: node.id, in: root)
-            } label: {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: node.isHidden ? "eye.slash" : "rectangle")
-                        .foregroundStyle(node.isHidden ? Color.gray : Color.accentColor)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(node.className)
-                            .font(.caption.monospaced())
-                            .lineLimit(1)
-                        Text("\(node.frame) · α \(node.alpha, format: .number.precision(.fractionLength(2)))")
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .top, spacing: 6) {
+                if !node.children.isEmpty {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) { isExpanded.toggle() }
+                    } label: {
+                        Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                            .font(.caption2)
+                            .frame(width: 16, height: 20)
                     }
-                    Spacer(minLength: 0)
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(isExpanded ? "Recolher views" : "Expandir views")
+                } else {
+                    Image(systemName: "circle.fill")
+                        .font(.system(size: 4))
+                        .frame(width: 16, height: 20)
+                        .foregroundStyle(.tertiary)
                 }
-                .contentShape(Rectangle())
+                Button {
+                    session.inspectView(withID: node.id, in: root)
+                } label: {
+                    HStack(alignment: .top, spacing: 8) {
+                        Image(systemName: node.isHidden ? "eye.slash" : "rectangle")
+                            .foregroundStyle(node.isHidden ? Color.gray : Color.accentColor)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(node.className)
+                                .font(.caption.monospaced())
+                                .lineLimit(1)
+                            Text("\(node.frame) · α \(node.alpha, format: .number.precision(.fractionLength(2)))")
+                                .font(.caption2.monospaced())
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            if isExpanded {
+                ForEach(node.children) { child in
+                    ViewNodeRow(node: child, root: root, session: session, depth: depth + 1)
+                        .padding(.leading, 8)
+                }
+            }
         }
         .font(.caption)
     }

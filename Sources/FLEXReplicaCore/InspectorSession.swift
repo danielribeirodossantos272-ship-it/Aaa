@@ -119,6 +119,10 @@ public final class InspectorSession: ObservableObject {
 
     public func inspectView(withID id: String, in root: UIView) {
         guard let view = viewInspector.view(withID: id, in: root) else { return }
+        guard !(view is UIWindow) else {
+            patchActionError = "A UIWindow é apenas o contêiner. Expanda a seta e selecione uma view filha."
+            return
+        }
         inspect(view)
     }
 

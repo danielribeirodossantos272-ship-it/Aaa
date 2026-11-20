@@ -1,4 +1,7 @@
 import XCTest
+#if canImport(UIKit)
+import UIKit
+#endif
 #if canImport(FLEXReplicaCore)
 @testable import FLEXReplicaCore
 #endif
@@ -46,6 +49,24 @@ final class FLEXReplicaCoreTests: XCTestCase {
     func testBrowserExposesPropertyMetadata() {
         let properties = RuntimeBrowser().info(for: "UIView")?.properties ?? []
         XCTAssertFalse(properties.isEmpty)
+    }
+
+    @MainActor
+    func testViewHierarchyExpandsChildrenAndSkipsWindowObjectSnapshot() throws {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 640))
+        let label = UILabel(frame: CGRect(x: 10, y: 10, width: 200, height: 40))
+        window.addSubview(label)
+        let session = InspectorSession()
+        session.inspectViewTree(window)
+
+        let root = try XCTUnwrap(session.rootViewTree)
+        let labelNode = try XCTUnwrap(root.children.first { $0.className == NSStringFromClass(UILabel.self) })
+        session.inspectView(withID: root.id, in: window)
+        XCTAssertNil(session.selectedObject)
+        XCTAssertNotNil(session.patchActionError)
+
+        session.inspectView(withID: labelNode.id, in: window)
+        XCTAssertEqual(session.selectedObject?.className, NSStringFromClass(UILabel.self))
     }
 
     @MainActor

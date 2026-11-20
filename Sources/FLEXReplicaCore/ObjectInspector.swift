@@ -35,7 +35,7 @@ public final class ObjectInspector {
     public func snapshot(_ object: AnyObject) -> ObjectSnapshot {
         #if canImport(ObjectiveC)
         let cls: AnyClass = object_getClass(object) ?? NSObject.self
-        let fields = collectFields(object: object, class: cls)
+        let fields = collectFields(class: cls)
         let properties = collectProperties(object: object, class: cls, fields: fields)
         let ptr = Unmanaged.passUnretained(object).toOpaque()
         return ObjectSnapshot(className: NSStringFromClass(cls),
@@ -49,7 +49,7 @@ public final class ObjectInspector {
     }
 
     #if canImport(ObjectiveC)
-    private func collectFields(object: AnyObject, class cls: AnyClass) -> [InspectedField] {
+    private func collectFields(class cls: AnyClass) -> [InspectedField] {
         var result: [InspectedField] = []
         var current: AnyClass? = cls
         var seen = Set<String>()
@@ -64,7 +64,7 @@ public final class ObjectInspector {
                     guard seen.insert(name).inserted else { continue }
                     let encoding = String(cString: encodingPointer)
                     result.append(InspectedField(id: name, name: name, typeEncoding: encoding,
-                                                 valueDescription: safeIvarDescription(object: object, ivar: ivar, encoding: encoding)))
+                                                 valueDescription: safeIvarDescription(encoding: encoding)))
                 }
                 free(ivars)
             }
@@ -87,8 +87,10 @@ public final class ObjectInspector {
                     guard let attributesPointer = property_getAttributes(property) else { continue }
                     let attributes = String(cString: attributesPointer)
                     let writable = !attributes.split(separator: ",").contains("R")
-                    let runtimeValue = safePropertyValue(object: object, name: name)
                     let declaredKind = editableKind(from: attributes)
+                    let shouldReadValue = writable && (declaredKind != nil ||
+                        (isGenericObjectProperty(attributes) && isAppDefinedClass(type)))
+                    let runtimeValue = shouldReadValue ? safePropertyValue(object: object, name: name) : nil
                     let runtimeStringKind: FLEXReplicaPropertyValueKind? = runtimeValue.map {
                         ($0 as? NSString) != nil || ($0 as? String) != nil
                     } == true ? .string : nil
@@ -108,6 +110,15 @@ public final class ObjectInspector {
             current = class_getSuperclass(type)
         }
         return result.sorted { $0.name < $1.name }
+    }
+
+    private func isGenericObjectProperty(_ attributes: String) -> Bool {
+        guard let typeAttribute = attributes.split(separator: ",").first else { return false }
+        return typeAttribute == "T@"
+    }
+
+    private func isAppDefinedClass(_ type: AnyClass) -> Bool {
+        Bundle(for: type).bundleURL.standardizedFileURL == Bundle.main.bundleURL.standardizedFileURL
     }
 
     private func editableKind(from attributes: String) -> FLEXReplicaPropertyValueKind? {
@@ -139,12 +150,11 @@ public final class ObjectInspector {
         #endif
     }
 
-    private func safeIvarDescription(object: AnyObject, ivar: Ivar, encoding: String) -> String {
-        guard encoding.hasPrefix("@") || encoding.hasPrefix("#") || encoding.hasPrefix(":") else {
-            return "<scalar ivar; encoding \(encoding)>"
+    private func safeIvarDescription(encoding: String) -> String {
+        if encoding.hasPrefix("@") || encoding.hasPrefix("#") || encoding.hasPrefix(":") {
+            return "<object ivar value omitted for safety>"
         }
-        guard let value = object_getIvar(object, ivar) else { return "nil" }
-        return String(describing: value)
+        return "<scalar ivar; value not read; encoding \(encoding)>"
     }
     #endif
 }

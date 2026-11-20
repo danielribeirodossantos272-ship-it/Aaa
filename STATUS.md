@@ -17,6 +17,13 @@ As fontes públicas oficiais do FLEX descrevem inspeção/edição de views e va
 
 O workflow [#44662170057](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44662170057) passou e compilou as dylibs arm64 de iPhone e iOS Simulator com a criação, persistência, nome e alternância de patches de propriedades. O ZIP do artefato foi verificado. XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
 
+## Correção da aba Views — aguardando CI
+
+- Expandir a raiz para mostrar os filhos diretos e separar a seta (expandir/recolher) do toque no nome (selecionar), sem renderizar a árvore inteira de uma vez.
+- Tratar `UIWindow` como contêiner, sem gerar snapshot dela, e orientar a seleção de uma view filha.
+- Deixar de dereferenciar ivars privados diretamente; restringir leituras KVC a propriedades de tipos reconhecidos e a objetos genéricos declarados pela classe do app.
+- Adicionar teste de hierarquia com `UIWindow`/`UILabel`. A compilação e a execução dos testes ainda precisam ser validadas no próximo CI.
+
 ## Limitações
 
 - A biblioteca não se carrega por conta própria. O app de teste precisa carregá-la; esta entrega não altera nem reempacota IPA.
