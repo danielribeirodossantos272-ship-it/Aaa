@@ -1,38 +1,25 @@
-# FLEX 3 Replica — Independent Implementation
+# FLEX Replica — implementação independente
 
-Projeto independente inspirado em ferramentas de inspeção de runtime. Não contém código recuperado da `Prefs.dylib` e não pretende reproduzir o código original.
+Projeto próprio de inspeção de runtime, inspirado em ferramentas de developer inspection. Não contém código recuperado de `Prefs.dylib` nem pretende reproduzir sua implementação.
 
-## Implementado no código-fonte
+## Recursos
 
-- Navegação de classes Objective-C via runtime (`objc_copyClassList`).
-- Inspeção de métodos, selectors e type encodings.
-- Inspeção de ivars e descrições de valores de objetos.
-- Construção recursiva da hierarquia de `UIView`.
-- Seleção de view por ponto convertido para o sistema de coordenadas da raiz.
-- Sessão de inspeção `@MainActor`.
-- Preferências persistentes com `UserDefaults` e Codable.
-- Painel SwiftUI independente com busca de classes e listagem de selectors.
-- Testes unitários para preferências e criação do navegador.
+- Navegação e busca de classes Objective-C, métodos, selectors, propriedades e type encodings.
+- Aba **Views** com árvore hierárquica expansível, frames, alpha/hidden e seleção de uma view.
+- Aba **Object** com snapshot de propriedades e ivars da view selecionada.
+- Opacidade ajustável e persistente; botão para fechar o painel.
+- Painel SwiftUI e entrypoint C `FLEXReplicaShowMenu()` incluídos no produto dinâmico `FLEXReplicaCore`.
 
-## Não implementado ou não verificado
+## Escopo e limites
 
-- Não há mecanismo de injeção em processos de terceiros.
-- Não há hooks Substrate, stubs de `MSHookMessageEx` ou alteração de IPA.
-- Não há edição arbitrária de memória.
-- O core foi compilado como `libFLEXReplicaCore.dylib` para iPhone arm64 e para simulador arm64 no GitHub Actions [#44638141575](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44638141575).
-- A inspeção real de views precisa ser executada em um app-demo em iOS.
-- O painel SwiftUI está no app-demo, separado da dylib Core; não há carregador nem injeção automática.
+A implementação é independente: não tem carregador, injeção em processos, hooks Substrate, edição arbitrária de memória nem alteração de IPA. O app hospedeiro deve carregar/vincular e assinar a dylib; depois que sua UI estiver ativa, deve chamar `FLEXReplicaMenuLauncher.showMenu()` em Swift ou `FLEXReplicaShowMenu()` usando `FLEXReplicaCore.h` em C/Objective-C. A biblioteca não aparece nem abre automaticamente só por existir num pacote.
 
-## Build reproduzível em macOS/Xcode
-
-Para compilar as dylibs em um Mac com Xcode:
+## Build em macOS/Xcode
 
 ```bash
 bash Scripts/build_dylib.sh
 ```
 
-O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`. O app-demo continua disponível separadamente via `bash Scripts/build_ios.sh`. A dylib contém o core de inspeção; não é um tweak de injeção e precisa ser incorporada e assinada por um app autorizado antes de uso em dispositivo.
+O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
 
-## Limitações de segurança e escopo
-
-A implementação foi desenhada para uso dentro de um aplicativo sob controle do desenvolvedor. Ela não implementa integração com a IPA de terceiros analisada anteriormente e não afirma preservar recursos internos do FLEX 3 original.
+A compilação CI da interface expandida está pendente após o commit atual. XCTest e execução visual em um app hospedeiro real não são afirmados como aprovados.

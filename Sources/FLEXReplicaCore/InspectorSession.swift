@@ -42,6 +42,11 @@ public final class InspectorSession: ObservableObject {
         rootViewTree = viewInspector.tree(from: root)
     }
 
+    public func inspectView(withID id: String, in root: UIView) {
+        guard let view = viewInspector.view(withID: id, in: root) else { return }
+        inspect(view)
+    }
+
     public func selectView(atWindowPoint point: CGPoint, in root: UIView) -> UIView? {
         viewInspector.view(atWindowPoint: point, in: root)
     }

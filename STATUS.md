@@ -1,29 +1,19 @@
 # Status da entrega
 
-## Implementado
+## Implementado no código-fonte
 
-- Projeto Swift Package modular e projeto Xcode para iOS.
-- `FLEXReplicaCore` é um produto dinâmico com `RuntimeBrowser`, `ObjectInspector`, `ViewHierarchyInspector`, `InspectorSession` e `PreferencesStore`.
-- Painel SwiftUI demonstrativo separado no app-demo.
-- Script e workflow macOS para compilar dylibs para iPhone arm64 e simulador arm64.
+O produto dinâmico `FLEXReplicaCore` contém o browser de runtime, o painel SwiftUI, o entrypoint C `FLEXReplicaShowMenu()` e um painel com três abas: **Views**, **Classes** e **Object**. A aba Views mostra a hierarquia de `UIView`; selecionar uma linha preenche o inspetor de objeto. O painel também inclui busca de classes, detalhes de métodos/propriedades, opacidade persistente e botão Close.
 
-## Dylibs compiladas
+A interface é uma aproximação independente com código próprio; não houve inspeção, decompilação ou cópia de `Prefs.dylib` nem alteração de IPA.
 
-- `libFLEXReplicaCore.dylib` para iPhone arm64, iOS 16.0+.
-- `libFLEXReplicaCore.dylib` para simulador iOS arm64.
-- Execução CI aprovada: [GitHub Actions #44638141575](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44638141575).
-- O pacote `FLEXReplicaCore-dylibs` foi baixado; ambos os binários foram verificados como Mach-O arm64 dinamicamente vinculados e o ZIP passou na verificação de integridade.
+## Build e validação
 
-## Ainda não verificado
+A compilação CI desta revisão está pendente. O workflow deverá compilar as variantes arm64 de iPhone (iOS 16.0+) e simulador e confirmar o símbolo exportado. O build anterior aprovou apenas a versão anterior do painel; não o usar como validação desta UI ampliada.
 
-- Testes XCTest e execução em dispositivo/simulador.
-- Carregamento da dylib em um app hospedeiro real.
-- Assinatura e distribuição de um `.ipa`.
+## Integração e testes pendentes
 
-## Escopo do binário
+- Um app hospedeiro autorizado precisa carregar/vincular e assinar a dylib, depois chamar `FLEXReplicaMenuLauncher.showMenu()` (Swift) ou `FLEXReplicaShowMenu()` (C/Objective-C) após a UI estar ativa.
+- XCTest e execução visual em app hospedeiro/dispositivo real ainda não foram realizados.
+- A variante de simulador não deve ser incluída em IPA para iPhone.
 
-A dylib contém o core de inspeção; o painel SwiftUI permanece no app-demo. Não existe carregador, hook ou mecanismo de injeção automática. Para uso em um app próprio, a biblioteca precisa ser incorporada e assinada pelo app hospedeiro. O artefato não é um `.app` nem um `.ipa`.
-
-## Auditoria funcional estática — 2026-11-19
-
-O navegador busca classes por nome, diferencia métodos de instância e de classe e percorre propriedades herdadas sem duplicá-las. O inspetor separa ivars de propriedades e evita interpretar ivars escalares como objetos. A seleção de views usa coordenadas locais de forma consistente, com sobrecarga explícita para coordenadas de janela. A sessão publica resultados de busca e seleção; o painel SwiftUI lista classes, propriedades e métodos e persiste a opacidade.
+A biblioteca não se carrega ou se abre automaticamente e não implementa injeção ou hooks.
