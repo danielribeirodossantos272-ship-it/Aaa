@@ -9,10 +9,11 @@ Projeto próprio de inspeção de runtime, inspirado em ferramentas de developer
 - Aba **Object** com snapshot de propriedades e ivars da view selecionada.
 - Opacidade ajustável e persistente; botão para fechar o painel.
 - Painel SwiftUI e entrypoint C `FLEXReplicaShowMenu()` incluídos no produto dinâmico `FLEXReplicaCore`.
+- Quando a dylib é carregada, um inicializador tenta apresentar o painel uma vez, depois que o app hospedeiro estiver ativo e tiver uma janela em primeiro plano.
 
 ## Escopo e limites
 
-A implementação é independente: não tem carregador, injeção em processos, hooks Substrate, edição arbitrária de memória nem alteração de IPA. O app hospedeiro deve carregar/vincular e assinar a dylib; depois que sua UI estiver ativa, deve chamar `FLEXReplicaMenuLauncher.showMenu()` em Swift ou `FLEXReplicaShowMenu()` usando `FLEXReplicaCore.h` em C/Objective-C. A biblioteca não aparece nem abre automaticamente só por existir num pacote.
+A biblioteca não se carrega dentro de um app por conta própria. O app hospedeiro ou um loader existente ainda precisa carregá-la; esta mudança não altera nem reempacota nenhuma IPA. A apresentação automática ocorre somente depois de a dylib entrar no processo. A API `FLEXReplicaShowMenu()` continua disponível para abrir o painel manualmente após a UI estar ativa. Não há hooks Substrate nem edição arbitrária de memória.
 
 ## Build em macOS/Xcode
 
@@ -22,4 +23,4 @@ bash Scripts/build_dylib.sh
 
 O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
 
-A compilação CI da interface expandida foi aprovada: [GitHub Actions #44643782652](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44643782652). As duas dylibs e headers foram empacotados; `FLEXReplicaShowMenu` foi confirmado como símbolo exportado. XCTest e execução visual em um app hospedeiro real não foram realizados.
+A validação CI da nova inicialização automática está pendente. XCTest e execução visual em um app hospedeiro real não são afirmados como aprovados.

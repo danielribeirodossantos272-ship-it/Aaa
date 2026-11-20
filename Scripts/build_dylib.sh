@@ -35,7 +35,11 @@ build_dylib() {
     echo "O símbolo FLEXReplicaShowMenu não foi exportado em $variant." >&2
     exit 1
   fi
-  echo "FLEXReplicaShowMenu exportado em $variant."
+  if ! grep -q 'FLEXReplicaAutoOpenEnsureLinked$' <<<"$symbols"; then
+    echo "O inicializador automático não foi ligado em $variant." >&2
+    exit 1
+  fi
+  echo "FLEXReplicaShowMenu e o inicializador automático ligados em $variant."
   file "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
 }
 

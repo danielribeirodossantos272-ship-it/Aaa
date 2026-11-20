@@ -1,6 +1,9 @@
 #if canImport(UIKit) && canImport(SwiftUI)
 import SwiftUI
 import UIKit
+#if canImport(FLEXReplicaAutoOpen)
+import FLEXReplicaAutoOpen
+#endif
 
 @MainActor
 public enum FLEXReplicaMenuLauncher {
@@ -42,6 +45,9 @@ public enum FLEXReplicaMenuLauncher {
 /// C-callable entry point. Call after the host app has a foreground UIWindowScene.
 @_cdecl("FLEXReplicaShowMenu")
 public func FLEXReplicaShowMenu() {
+#if canImport(FLEXReplicaAutoOpen)
+    _ = FLEXReplicaAutoOpenEnsureLinked()
+#endif
     Task { @MainActor in
         FLEXReplicaMenuLauncher.showMenu()
     }

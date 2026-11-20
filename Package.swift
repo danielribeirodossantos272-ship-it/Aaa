@@ -9,7 +9,8 @@ let package = Package(
         .executable(name: "FLEXReplicaDemo", targets: ["FLEXReplicaDemo"])
     ],
     targets: [
-        .target(name: "FLEXReplicaCore"),
+        .target(name: "FLEXReplicaAutoOpen", publicHeadersPath: "include"),
+        .target(name: "FLEXReplicaCore", dependencies: ["FLEXReplicaAutoOpen"]),
         .executableTarget(name: "FLEXReplicaDemo", dependencies: ["FLEXReplicaCore"]),
         .testTarget(name: "FLEXReplicaCoreTests", dependencies: ["FLEXReplicaCore"])
     ]
