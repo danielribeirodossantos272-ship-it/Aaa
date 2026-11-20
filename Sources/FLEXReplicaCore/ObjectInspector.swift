@@ -127,7 +127,7 @@ public final class ObjectInspector {
     private func safePropertyDescription(object: AnyObject, name: String) -> String? {
         #if canImport(FLEXReplicaRuntimeBridge)
         var value: AnyObject?
-        guard FLEXReplicaTryGetObjectValue(object, name as NSString, &value) else { return nil }
+        guard FLEXReplicaTryGetObjectValue(object, name, &value) else { return nil }
         return value.map { String(describing: $0) } ?? "nil"
         #else
         return nil

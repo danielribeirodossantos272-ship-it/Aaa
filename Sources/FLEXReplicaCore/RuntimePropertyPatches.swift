@@ -201,7 +201,7 @@ public final class FLEXReplicaPatchStore: ObservableObject {
                            kind: FLEXReplicaPropertyValueKind) -> FLEXReplicaPatchValue? {
         #if canImport(FLEXReplicaRuntimeBridge)
         var rawValue: AnyObject?
-        guard FLEXReplicaTryGetObjectValue(object, propertyName as NSString, &rawValue) else { return nil }
+        guard FLEXReplicaTryGetObjectValue(object, propertyName, &rawValue) else { return nil }
         #else
         guard let nsObject = object as? NSObject else { return nil }
         let rawValue = nsObject.value(forKey: propertyName) as AnyObject?
@@ -225,7 +225,7 @@ public final class FLEXReplicaPatchStore: ObservableObject {
                             to object: AnyObject,
                             propertyName: String) -> Bool {
         #if canImport(FLEXReplicaRuntimeBridge)
-        return FLEXReplicaTrySetObjectValue(object, propertyName as NSString, value.foundationValue)
+        return FLEXReplicaTrySetObjectValue(object, propertyName, value.foundationValue)
         #else
         guard let nsObject = object as? NSObject else { return false }
         nsObject.setValue(value.foundationValue, forKey: propertyName)
