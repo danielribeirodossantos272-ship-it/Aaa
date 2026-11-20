@@ -53,9 +53,10 @@ public final class ObjectInspector {
             if let ivars = class_copyIvarList(type, &count) {
                 for index in 0..<Int(count) {
                     let ivar = ivars[index]
-                    let name = String(cString: ivar_getName(ivar))
+                    guard let namePointer = ivar_getName(ivar) else { continue }
+                    let name = String(cString: namePointer)
                     guard seen.insert(name).inserted else { continue }
-                    let encoding = String(cString: ivar_getTypeEncoding(ivar))
+                    let encoding = ivar_getTypeEncoding(ivar).map { String(cString: $0) } ?? ""
                     result.append(InspectedField(id: name, name: name, typeEncoding: encoding,
                                                  valueDescription: safeIvarDescription(object: object, ivar: ivar, encoding: encoding)))
                 }
@@ -77,7 +78,7 @@ public final class ObjectInspector {
                     let property = properties[index]
                     let name = String(cString: property_getName(property))
                     guard seen.insert(name).inserted else { continue }
-                    let attributes = String(cString: property_getAttributes(property))
+                    let attributes = property_getAttributes(property).map { String(cString: $0) } ?? ""
                     let candidates = ["_\(name)", name]
                     let fieldValue = fields.first { candidates.contains($0.name) }?.valueDescription ?? "<accessor not read>"
                     result.append(InspectedProperty(id: "\(NSStringFromClass(type))::\(name)", name: name,
