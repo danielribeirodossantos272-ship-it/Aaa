@@ -2,6 +2,9 @@ import Foundation
 #if canImport(ObjectiveC)
 import ObjectiveC.runtime
 #endif
+#if canImport(FLEXReplicaRuntimeBridge)
+import FLEXReplicaRuntimeBridge
+#endif
 
 public struct RuntimeMethodInfo: Identifiable, Hashable, Sendable {
     public let id: String
@@ -28,20 +31,24 @@ public final class RuntimeBrowser {
     public init() {}
 
     public func classes(matching query: String = "") -> [RuntimeClassInfo] {
-        #if canImport(ObjectiveC)
+        classNames(matching: query)
+            .compactMap { info(for: $0) }
+            .sorted { $0.name < $1.name }
+    }
+
+    public func classNames(matching query: String = "") -> [String] {
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        #if canImport(ObjectiveC) && canImport(FLEXReplicaRuntimeBridge)
+        return FLEXReplicaCopyRuntimeClassNames()
+            .filter { needle.isEmpty || $0.lowercased().contains(needle) }
+        #elseif canImport(ObjectiveC)
         var count: UInt32 = 0
         guard let list = objc_copyClassList(&count) else { return [] }
         defer { free(UnsafeMutableRawPointer(list)) }
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        return (0..<Int(count)).compactMap { index in
-            let cls: AnyClass = list[index]
-            let name = NSStringFromClass(cls)
-            guard needle.isEmpty || name.lowercased().contains(needle) else { return nil }
-            let superclass = class_getSuperclass(cls).map { NSStringFromClass($0) }
-            return RuntimeClassInfo(id: name, name: name, superclass: superclass,
-                                    methods: methodInfos(for: cls, classMethods: false),
-                                    properties: propertyInfos(for: cls))
-        }.sorted { $0.name < $1.name }
+        return (0..<Int(count))
+            .map { NSStringFromClass(list[$0]) }
+            .filter { needle.isEmpty || $0.lowercased().contains(needle) }
+            .sorted()
         #else
         return []
         #endif

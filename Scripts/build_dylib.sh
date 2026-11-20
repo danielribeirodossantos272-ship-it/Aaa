@@ -39,7 +39,11 @@ build_dylib() {
     echo "O inicializador automático não foi ligado em $variant." >&2
     exit 1
   fi
-  echo "FLEXReplicaShowMenu e o inicializador automático ligados em $variant."
+  if ! grep -q 'FLEXReplicaCopyRuntimeClassNames$' <<<"$symbols"; then
+    echo "A ponte Objective-C do runtime não foi ligada em $variant." >&2
+    exit 1
+  fi
+  echo "Entrypoint, autostart e ponte runtime ligados em $variant."
   file "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
 }
 

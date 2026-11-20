@@ -21,8 +21,10 @@ public final class InspectorSession: ObservableObject {
     public init() {}
 
     public func searchClasses(_ query: String) {
-        matchingClasses = browser.classes(matching: query)
-        selectedClass = matchingClasses.first
+        matchingClasses = browser.classNames(matching: query).map { name in
+            RuntimeClassInfo(id: name, name: name, superclass: nil, methods: [], properties: [])
+        }
+        selectedClass = nil
     }
 
     public func selectClass(_ name: String) {

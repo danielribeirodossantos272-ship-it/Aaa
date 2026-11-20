@@ -188,8 +188,10 @@ public struct FLEXReplicaPanel: View {
                     }
                     .padding(.vertical, 4)
                 }
-            } else {
+            } else if session.matchingClasses.isEmpty {
                 emptyState("No matching classes", symbol: "magnifyingglass")
+            } else {
+                emptyState("Select a class above to inspect details", symbol: "cursorarrow.click")
             }
         }
     }
