@@ -1,8 +1,8 @@
 .build/
 DerivedData/
-dist/
 *.xcodeproj/xcuserdata/
 *.xcworkspace/xcuserdata/
 *.app
 *.ipa
 .DS_Store
+build/

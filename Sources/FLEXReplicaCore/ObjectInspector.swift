@@ -2,9 +2,6 @@ import Foundation
 #if canImport(ObjectiveC)
 import ObjectiveC.runtime
 #endif
-#if canImport(FLEXReplicaRuntimeBridge)
-import FLEXReplicaRuntimeBridge
-#endif
 
 public struct InspectedField: Identifiable, Hashable, Sendable {
     public let id: String
@@ -18,8 +15,6 @@ public struct InspectedProperty: Identifiable, Hashable, Sendable {
     public let name: String
     public let attributes: String
     public let valueDescription: String
-    public let isWritable: Bool
-    public let editableKind: FLEXReplicaPropertyValueKind?
 }
 
 public struct ObjectSnapshot: Sendable {
@@ -58,11 +53,9 @@ public final class ObjectInspector {
             if let ivars = class_copyIvarList(type, &count) {
                 for index in 0..<Int(count) {
                     let ivar = ivars[index]
-                    guard let namePointer = ivar_getName(ivar),
-                          let encodingPointer = ivar_getTypeEncoding(ivar) else { continue }
-                    let name = String(cString: namePointer)
+                    let name = String(cString: ivar_getName(ivar))
                     guard seen.insert(name).inserted else { continue }
-                    let encoding = String(cString: encodingPointer)
+                    let encoding = String(cString: ivar_getTypeEncoding(ivar))
                     result.append(InspectedField(id: name, name: name, typeEncoding: encoding,
                                                  valueDescription: safeIvarDescription(object: object, ivar: ivar, encoding: encoding)))
                 }
@@ -84,59 +77,17 @@ public final class ObjectInspector {
                     let property = properties[index]
                     let name = String(cString: property_getName(property))
                     guard seen.insert(name).inserted else { continue }
-                    guard let attributesPointer = property_getAttributes(property) else { continue }
-                    let attributes = String(cString: attributesPointer)
-                    let writable = !attributes.split(separator: ",").contains("R")
-                    let runtimeValue = safePropertyValue(object: object, name: name)
-                    let declaredKind = editableKind(from: attributes)
-                    let runtimeStringKind: FLEXReplicaPropertyValueKind? = runtimeValue.map {
-                        ($0 as? NSString) != nil || ($0 as? String) != nil
-                    } == true ? .string : nil
-                    let kind = writable ? (declaredKind ?? runtimeStringKind) : nil
+                    let attributes = String(cString: property_getAttributes(property))
                     let candidates = ["_\(name)", name]
                     let fieldValue = fields.first { candidates.contains($0.name) }?.valueDescription ?? "<accessor not read>"
-                    let valueDescription = runtimeValue.map { String(describing: $0) } ?? fieldValue
-                    result.append(InspectedProperty(id: "\(NSStringFromClass(type))::\(name)",
-                                                     name: name,
-                                                     attributes: attributes,
-                                                     valueDescription: valueDescription,
-                                                     isWritable: writable && kind != nil,
-                                                     editableKind: kind))
+                    result.append(InspectedProperty(id: "\(NSStringFromClass(type))::\(name)", name: name,
+                                                     attributes: attributes, valueDescription: fieldValue))
                 }
                 free(properties)
             }
             current = class_getSuperclass(type)
         }
         return result.sorted { $0.name < $1.name }
-    }
-
-    private func editableKind(from attributes: String) -> FLEXReplicaPropertyValueKind? {
-        guard let typeAttribute = attributes.split(separator: ",").first,
-              typeAttribute.first == "T" else { return nil }
-        let encoding = String(typeAttribute.dropFirst())
-        if encoding == "@\"NSString\"" || encoding == "@\"NSMutableString\"" {
-            return .string
-        }
-        if encoding == "@\"NSNumber\"" {
-            return .number
-        }
-        if encoding == "B" {
-            return .boolean
-        }
-        if ["c", "C", "s", "S", "i", "I", "l", "L", "q", "Q", "f", "d"].contains(encoding) {
-            return .number
-        }
-        return nil
-    }
-
-    private func safePropertyValue(object: AnyObject, name: String) -> AnyObject? {
-        #if canImport(FLEXReplicaRuntimeBridge)
-        var value: AnyObject?
-        guard FLEXReplicaTryGetObjectValue(object, name, &value) else { return nil }
-        return value
-        #else
-        return nil
-        #endif
     }
 
     private func safeIvarDescription(object: AnyObject, ivar: Ivar, encoding: String) -> String {

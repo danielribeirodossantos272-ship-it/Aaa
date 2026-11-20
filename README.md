@@ -1,41 +1,56 @@
-# FLEX Replica — implementação independente
+# FLEX 3 Replica — Independent Implementation
 
-Projeto próprio de inspeção de runtime, inspirado em ferramentas de developer inspection. Não contém código recuperado de `Prefs.dylib` nem reproduz código/ativos do FLEX.
+Projeto independente inspirado em ferramentas de inspeção de runtime. Não contém código recuperado da `Prefs.dylib` e não pretende reproduzir o código original.
 
-## Recursos implementados
+## Implementado no código-fonte
 
-- Busca de classes Objective-C, métodos, selectors, propriedades e type encodings.
-- Aba **Views** com hierarquia expansível, frames, alpha/hidden e seleção de uma view.
-- Aba **Object** com snapshot de propriedades/ivars e editores para propriedades graváveis `NSString`/`NSNumber`, além de strings detectadas pelo valor em runtime e escalares numéricos/booleanos reconhecidos.
-- Aba **Patches**: cria uma entrada inativa para um valor substituto, mostra-a na lista e permite ativar, desativar ou remover. Ao ativar, registra o valor-base atual; ao desativar, restaura esse valor. Se o app tiver alterado a propriedade desde a ativação, a ferramenta preserva o valor atual em vez de sobrescrevê-lo.
-- Botão **FLEX** flutuante e arrastável, instalado depois que a dylib entra no processo e o app hospedeiro fica ativo. Tocar nele abre o painel; o painel deixa de surgir automaticamente.
-- Entrypoints C `FLEXReplicaInstallFloatingButton()` e `FLEXReplicaShowMenu()` no produto dinâmico `FLEXReplicaCore`.
+- Navegação de classes Objective-C via runtime (`objc_copyClassList`).
+- Inspeção de métodos, selectors e type encodings.
+- Inspeção de ivars e descrições de valores de objetos.
+- Construção recursiva da hierarquia de `UIView`.
+- Seleção de view por ponto convertido para o sistema de coordenadas da raiz.
+- Sessão de inspeção `@MainActor`.
+- Preferências persistentes com `UserDefaults` e Codable.
+- Painel SwiftUI independente com busca de classes e listagem de selectors.
+- Testes unitários para preferências e criação do navegador.
 
-Os patches são overrides de **valores de propriedades de um único objeto selecionado**. Eles ficam em memória durante o processo e mantêm uma referência fraca ao objeto; não persistem após reiniciar o app e podem ficar indisponíveis se o objeto for destruído. Isso não é um patch de executável, de implementação de método ou de código arbitrário, nem uma implementação de paridade total com FLEX 3.
+## Patches de método (criar / ativar / desativar)
 
-## Uso do painel
+- `PatchManager` (`PatchEngine.swift`) cria patches do tipo "este método passa a retornar X", liga/desliga cada um, remove e persiste em `UserDefaults`. Chame `PatchManager.shared.applyEnabledPatches()` no início do app para reaplicar os habilitados.
+- Tipos de retorno suportados: `void` (vira no-op), `BOOL`, `int`, `long/NSInteger`, `float`, `double`, objeto (`texto`, `nil`, `@YES`, `@42`) e `Class`. Structs e ponteiros não são suportados.
+- Só métodos visíveis ao runtime Objective-C (`@objc`/herdados de `NSObject`) e sem parâmetros explícitos. O patch usa `class_replaceMethod`; desativar restaura o IMP original. Métodos com parâmetros são recusados pelo backend para não aplicar um IMP com assinatura incompatível.
+- No painel: botão **Patch** ao lado de cada método e botão **Patches (n)** para listar/ativar/desativar/apagar.
 
-1. Com a dylib já carregada no app de teste, espere o botão flutuante **FLEX** aparecer.
-2. Abra **Views**, selecione uma view e entre em **Object**.
-3. Em uma propriedade editável, informe o novo valor e toque em **Create Patch**.
-4. O painel muda para **Patches**; a nova entrada começa desligada. Ative o controle para aplicar o valor, desligue para restaurar o valor-base ou remova a entrada.
+## Dylib (`FLEXReplica.dylib`)
 
-A biblioteca não se carrega dentro de um app por conta própria. O app hospedeiro ou um loader autorizado ainda precisa carregá-la e assinar os binários corretamente. Esta mudança não altera nem reempacota nenhuma IPA. A variante para iPhone é `dist/ios-device-arm64/libFLEXReplicaCore.dylib`; a variante de simulador é separada.
+`./Scripts/build_dylib.sh` compila Core + painel + patches + `Dylib/Bootstrap.swift` em uma `.dylib` (`SDK=iphonesimulator` para simulador). Ao carregar, o `constructor` em `Dylib/entry.c` reaplica os patches salvos e, quando o app fica ativo, mostra dois botões flutuantes: 🐞 abre o painel (classes, métodos, patches) e o visor (viewfinder) liga o modo de seleção — toque em qualquer view do app para realçá-la e ver classe, frame, view controller, cadeia de superviews, subviews, propriedades e ivars (toque em uma linha para navegar na hierarquia).
 
-## Escopo e referências públicas
+Para usar no **seu próprio app**: no Xcode, arraste `FLEXReplica.dylib` para o target e deixe em *Frameworks, Libraries, and Embedded Content* como **Embed & Sign**.
 
-O README oficial do FLEX descreve inspeção/modificação de views, propriedades/ivars, chamadas de métodos, rede, logs, heap, arquivos do sandbox, SQLite/Realm e `NSUserDefaults`. As fontes oficiais consultadas não documentam um criador/ativador genérico de patches como função do FLEX; esta aba **Patches** é uma implementação original e limitada a overrides reversíveis de propriedades. A exploração do runtime Objective-C é uma camada distinta.
+## Build no GitHub Actions
 
-- [FLEX — repositório e README oficial](https://github.com/FLEXTool/FLEX)
-- [Introducing Flex — Flipboard Engineering](https://about.flipboard.com/engineering/flex/)
-- [Objective-C Runtime — Apple Developer Documentation](https://developer.apple.com/documentation/objectivec/objective-c-runtime)
+`.github/workflows/build-dylib.yml` compila `FLEXReplica.dylib` (dispositivo e simulador) em um runner macOS a cada push, ou manualmente em **Actions → Build FLEXReplica.dylib → Run workflow**. O resultado fica em **Artifacts** no fim da execução (`FLEXReplica-dylib-iphoneos` / `-iphonesimulator`), junto com o log do build (`build-log-*`). Um job extra tenta compilar o app demo e não bloqueia o resto.
 
-## Build em macOS/Xcode
+## Não implementado ou não verificado
+
+- Não há mecanismo de injeção em processos de terceiros.
+- Não há hooks Substrate, stubs de `MSHookMessageEx` ou alteração de IPA.
+- Não há edição arbitrária de memória.
+- O projeto não foi compilado neste ambiente: Linux não possui Xcode, UIKit executável ou simulador iOS.
+- A inspeção real de views precisa ser executada em um app-demo em iOS.
+- O `FLEXReplicaPanel` é uma interface funcional de demonstração, mas ainda precisa ser hospedado em um projeto Xcode iOS para teste visual.
+
+## Build reproduzível em macOS/Xcode
+
+Abra `FLEXReplica.xcodeproj` no Xcode. O projeto contém os targets `FLEXReplicaDemo` e `FLEXReplicaTests`; selecione um Team de desenvolvimento em Signing & Capabilities antes de instalar em um iPhone. Nenhuma identidade de assinatura foi embutida no projeto.
 
 ```bash
-bash Scripts/build_dylib.sh
+chmod +x Scripts/build_ios.sh
+./Scripts/build_ios.sh
 ```
 
-O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
+O script falha explicitamente se `xcodebuild` não estiver disponível. Para um build iOS real, crie/abra um workspace Xcode que inclua este Swift Package, configure um target iOS para `FLEXReplicaDemo`, assine com uma identidade de desenvolvimento e execute em simulador ou dispositivo.
 
-A revisão para detectar propriedades String pelo valor em runtime passou no GitHub Actions [#44657623313](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44657623313), gerando variantes arm64 de iPhone e simulador. XCTest e execução em iPhone/app hospedeiro real ainda não foram realizados.
+## Limitações de segurança e escopo
+
+A implementação foi desenhada para uso dentro de um aplicativo sob controle do desenvolvedor. Ela não implementa integração com a IPA de terceiros analisada anteriormente e não afirma preservar recursos internos do FLEX 3 original.

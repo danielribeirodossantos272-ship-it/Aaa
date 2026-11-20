@@ -2,9 +2,6 @@ import Foundation
 #if canImport(ObjectiveC)
 import ObjectiveC.runtime
 #endif
-#if canImport(FLEXReplicaRuntimeBridge)
-import FLEXReplicaRuntimeBridge
-#endif
 
 public struct RuntimeMethodInfo: Identifiable, Hashable, Sendable {
     public let id: String
@@ -31,24 +28,20 @@ public final class RuntimeBrowser {
     public init() {}
 
     public func classes(matching query: String = "") -> [RuntimeClassInfo] {
-        classNames(matching: query)
-            .compactMap { info(for: $0) }
-            .sorted { $0.name < $1.name }
-    }
-
-    public func classNames(matching query: String = "") -> [String] {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        #if canImport(ObjectiveC) && canImport(FLEXReplicaRuntimeBridge)
-        return FLEXReplicaCopyRuntimeClassNames()
-            .filter { needle.isEmpty || $0.lowercased().contains(needle) }
-        #elseif canImport(ObjectiveC)
+        #if canImport(ObjectiveC)
         var count: UInt32 = 0
         guard let list = objc_copyClassList(&count) else { return [] }
         defer { free(UnsafeMutableRawPointer(list)) }
-        return (0..<Int(count))
-            .map { NSStringFromClass(list[$0]) }
-            .filter { needle.isEmpty || $0.lowercased().contains(needle) }
-            .sorted()
+        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        return (0..<Int(count)).compactMap { index in
+            let cls: AnyClass = list[index]
+            let name = NSStringFromClass(cls)
+            guard needle.isEmpty || name.lowercased().contains(needle) else { return nil }
+            let superclass = class_getSuperclass(cls).map { NSStringFromClass($0) }
+            return RuntimeClassInfo(id: name, name: name, superclass: superclass,
+                                    methods: methodInfos(for: cls, classMethods: false),
+                                    properties: propertyInfos(for: cls))
+        }.sorted { $0.name < $1.name }
         #else
         return []
         #endif
@@ -90,10 +83,9 @@ public final class RuntimeBrowser {
         return (0..<Int(count)).map { index in
             let method = methods[index]
             let selector = method_getName(method)
-            let encoding = method_getTypeEncoding(method).map { String(cString: $0) } ?? ""
             return RuntimeMethodInfo(id: "\(className)::\(NSStringFromSelector(selector))",
                                      selector: NSStringFromSelector(selector),
-                                     typeEncoding: encoding,
+                                     typeEncoding: String(cString: method_getTypeEncoding(method)),
                                      isClassMethod: classMethods)
         }.sorted { $0.selector < $1.selector }
     }
@@ -109,8 +101,7 @@ public final class RuntimeBrowser {
                     let property = properties[index]
                     let name = String(cString: property_getName(property))
                     guard seen.insert(name).inserted else { continue }
-                    guard let attributesPointer = property_getAttributes(property) else { continue }
-                    let attributes = String(cString: attributesPointer)
+                    let attributes = String(cString: property_getAttributes(property))
                     result.append(RuntimePropertyInfo(id: "\(NSStringFromClass(type))::\(name)", name: name, attributes: attributes))
                 }
                 free(properties)

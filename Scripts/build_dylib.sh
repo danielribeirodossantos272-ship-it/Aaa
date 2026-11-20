@@ -1,63 +1,47 @@
 #!/usr/bin/env bash
+# Compila FLEXReplica.dylib (Core + painel + patches + overlay) com swiftc/clang.
+# Uso:
+#   ./Scripts/build_dylib.sh                           # dispositivo (arm64)
+#   SDK=iphonesimulator ./Scripts/build_dylib.sh       # simulador (ARCH=arm64 ou x86_64)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-if ! command -v swift >/dev/null 2>&1 || ! command -v xcrun >/dev/null 2>&1; then
-  echo "swift e xcrun não encontrados. Este script requer macOS com Xcode." >&2
+if ! command -v xcrun >/dev/null 2>&1; then
+  echo "xcrun não encontrado. Este script precisa ser executado em macOS com Xcode." >&2
   exit 2
 fi
 
-build_dylib() {
-  local variant="$1"
-  local sdk_name="$2"
-  local triple="$3"
-  local sdk_path scratch_path dylib_path
-  sdk_path="$(xcrun --sdk "$sdk_name" --show-sdk-path)"
-  scratch_path="$ROOT/.build/dylib-$variant"
+SDK="${SDK:-iphoneos}"
+ARCH="${ARCH:-arm64}"
+MIN_IOS="${MIN_IOS:-16.0}"
+case "$SDK" in
+  iphoneos)        TARGET="${ARCH}-apple-ios${MIN_IOS}" ;;
+  iphonesimulator) TARGET="${ARCH}-apple-ios${MIN_IOS}-simulator" ;;
+  *) echo "SDK inválido: $SDK (use iphoneos ou iphonesimulator)" >&2; exit 2 ;;
+esac
 
-  swift build --package-path "$ROOT" --product FLEXReplicaCore \
-    --configuration release --triple "$triple" --sdk "$sdk_path" \
-    --scratch-path "$scratch_path"
+SDK_PATH="$(xcrun --sdk "$SDK" --show-sdk-path)"
+OUT="$ROOT/build/dylib/$SDK"
+mkdir -p "$OUT"
 
-  dylib_path="$(find "$scratch_path" -type f -name 'libFLEXReplicaCore.dylib' -print -quit)"
-  if [[ -z "$dylib_path" ]]; then
-    echo "A compilação de $variant não produziu libFLEXReplicaCore.dylib." >&2
-    exit 1
-  fi
+# 1) constructor (C)
+xcrun --sdk "$SDK" clang -target "$TARGET" -isysroot "$SDK_PATH" -c Dylib/entry.c -o "$OUT/entry.o"
 
-  mkdir -p "$ROOT/dist/$variant"
-  cp "$dylib_path" "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
-  cp "$ROOT/include/FLEXReplicaCore.h" "$ROOT/dist/$variant/FLEXReplicaCore.h"
-  local symbols
-  symbols="$(xcrun nm -gU "$ROOT/dist/$variant/libFLEXReplicaCore.dylib")"
-  if ! grep -q 'FLEXReplicaShowMenu$' <<<"$symbols"; then
-    echo "O símbolo FLEXReplicaShowMenu não foi exportado em $variant." >&2
-    exit 1
-  fi
-  if ! grep -q 'FLEXReplicaInstallFloatingButton$' <<<"$symbols"; then
-    echo "O símbolo FLEXReplicaInstallFloatingButton não foi exportado em $variant." >&2
-    exit 1
-  fi
-  if ! grep -q 'FLEXReplicaAutoOpenEnsureLinked$' <<<"$symbols"; then
-    echo "O inicializador automático não foi ligado em $variant." >&2
-    exit 1
-  fi
-  if ! grep -q 'FLEXReplicaCopyRuntimeClassNames$' <<<"$symbols"; then
-    echo "A ponte Objective-C do runtime não foi ligada em $variant." >&2
-    exit 1
-  fi
-  if ! grep -q 'FLEXReplicaTryGetObjectValue$' <<<"$symbols"; then
-    echo "A leitura segura de propriedades não foi ligada em $variant." >&2
-    exit 1
-  fi
-  if ! grep -q 'FLEXReplicaTrySetObjectValue$' <<<"$symbols"; then
-    echo "A escrita segura de propriedades não foi ligada em $variant." >&2
-    exit 1
-  fi
-  echo "Entrypoints do painel/botão, autostart e ponte runtime ligados em $variant."
-  file "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
-}
+# 2) dylib: Core + painel + patches + bootstrap, tudo em um único módulo
+xcrun --sdk "$SDK" swiftc \
+  -emit-library -parse-as-library -swift-version 5 \
+  -module-name FLEXReplica \
+  -target "$TARGET" -sdk "$SDK_PATH" \
+  Sources/FLEXReplicaCore/*.swift \
+  Sources/FLEXReplicaDemo/FLEXReplicaPanel.swift \
+  Sources/FLEXReplicaDemo/PatchesView.swift \
+  Dylib/*.swift \
+  "$OUT/entry.o" \
+  -Xlinker -install_name -Xlinker @rpath/FLEXReplica.dylib \
+  -o "$OUT/FLEXReplica.dylib"
 
-build_dylib "ios-device-arm64" "iphoneos" "arm64-apple-ios16.0"
-build_dylib "ios-simulator-arm64" "iphonesimulator" "arm64-apple-ios16.0-simulator"
+# 3) assinatura ad-hoc (o Xcode reassina com a sua identidade ao embutir no app)
+codesign -f -s - "$OUT/FLEXReplica.dylib"
+
+echo "OK: $OUT/FLEXReplica.dylib"

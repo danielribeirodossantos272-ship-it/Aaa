@@ -1,0 +1,72 @@
+name: Build FLEXReplica.dylib
+
+on:
+  push:
+    branches: [main, master, 'build/flex-replica-github-20261119']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  dylib:
+    name: dylib (${{ matrix.sdk }})
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sdk: [iphoneos, iphonesimulator]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+          xcrun --sdk ${{ matrix.sdk }} --show-sdk-version
+
+      - name: Build FLEXReplica.dylib
+        env:
+          SDK: ${{ matrix.sdk }}
+        run: |
+          set -o pipefail
+          bash Scripts/build_dylib.sh 2>&1 | tee build-${{ matrix.sdk }}.log
+
+      - name: Inspect result
+        run: |
+          DYLIB="build/dylib/${{ matrix.sdk }}/FLEXReplica.dylib"
+          file "$DYLIB"
+          lipo -info "$DYLIB"
+          otool -L "$DYLIB"
+
+      - name: Upload dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: FLEXReplica-dylib-${{ matrix.sdk }}
+          path: build/dylib/${{ matrix.sdk }}/FLEXReplica.dylib
+          if-no-files-found: error
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ matrix.sdk }}
+          path: build-${{ matrix.sdk }}.log
+
+  # Extra (não bloqueia): compila o app demo, para pegar erros do .xcodeproj.
+  demo-app:
+    name: demo app (simulator)
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build FLEXReplicaDemo
+        run: |
+          set -o pipefail
+          xcodebuild -project FLEXReplica.xcodeproj -target FLEXReplicaDemo \
+            -sdk iphonesimulator -configuration Debug build \
+            CODE_SIGNING_ALLOWED=NO 2>&1 | tee build-demo.log
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-demo
+          path: build-demo.log

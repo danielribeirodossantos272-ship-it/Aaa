@@ -18,14 +18,6 @@ public final class ViewHierarchyInspector {
 
     public func tree(from root: UIView) -> ViewNode { makeNode(root) }
 
-    public func view(withID id: String, in root: UIView) -> UIView? {
-        if ObjectIdentifier(root).debugDescription == id { return root }
-        for child in root.subviews {
-            if let match = view(withID: id, in: child) { return match }
-        }
-        return nil
-    }
-
     /// `point` is expressed in the coordinate system of `root`.
     public func view(at point: CGPoint, in root: UIView) -> UIView? {
         guard root.bounds.contains(point), isVisible(root) else { return nil }
@@ -54,7 +46,7 @@ public final class ViewHierarchyInspector {
     private func makeNode(_ view: UIView) -> ViewNode {
         ViewNode(id: ObjectIdentifier(view).debugDescription,
                  className: NSStringFromClass(type(of: view)),
-                 frame: NSCoder.string(for: view.frame),
+                 frame: NSStringFromCGRect(view.frame),
                  isHidden: view.isHidden,
                  alpha: Double(view.alpha),
                  children: view.subviews.map(makeNode))
