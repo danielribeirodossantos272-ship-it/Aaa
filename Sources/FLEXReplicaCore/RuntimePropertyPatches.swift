@@ -18,7 +18,7 @@ public enum FLEXReplicaPropertyValueKind: String, Hashable, Sendable {
     }
 }
 
-public enum FLEXReplicaPatchValue: Hashable, Sendable {
+public enum FLEXReplicaPatchValue: Hashable, Sendable, Codable {
     case null
     case string(String)
     case boolean(Bool)
@@ -64,9 +64,10 @@ public enum FLEXReplicaPatchValue: Hashable, Sendable {
 @MainActor
 public final class FLEXReplicaPropertyPatch: ObservableObject, Identifiable {
     public let id: UUID
-    public let title: String
+    public let name: String
+    public var title: String { name }
     public let className: String
-    public let objectAddress: String
+    @Published public fileprivate(set) var objectAddress: String
     public let propertyName: String
     @Published public fileprivate(set) var originalValue: FLEXReplicaPatchValue
     public let replacementValue: FLEXReplicaPatchValue
@@ -74,22 +75,27 @@ public final class FLEXReplicaPropertyPatch: ObservableObject, Identifiable {
     @Published public fileprivate(set) var lastError: String?
     fileprivate weak var targetObject: AnyObject?
 
-    fileprivate init(className: String,
+    public var isBound: Bool { targetObject != nil }
+
+    fileprivate init(id: UUID = UUID(),
+                     name: String,
+                     className: String,
                      objectAddress: String,
                      propertyName: String,
                      originalValue: FLEXReplicaPatchValue,
                      replacementValue: FLEXReplicaPatchValue,
-                     targetObject: AnyObject) {
-        self.id = UUID()
+                     targetObject: AnyObject?,
+                     lastError: String? = nil) {
+        self.id = id
+        self.name = name
         self.className = className
         self.objectAddress = objectAddress
         self.propertyName = propertyName
-        self.title = "\(className).\(propertyName)"
         self.originalValue = originalValue
         self.replacementValue = replacementValue
         self.targetObject = targetObject
         self.isActive = false
-        self.lastError = nil
+        self.lastError = lastError
     }
 }
 
@@ -99,13 +105,44 @@ public final class FLEXReplicaPatchStore: ObservableObject {
 
     @Published public private(set) var patches: [FLEXReplicaPropertyPatch] = []
 
-    public init() {}
+    private struct SavedPatch: Codable {
+        let id: UUID
+        let name: String
+        let className: String
+        let propertyName: String
+        var originalValue: FLEXReplicaPatchValue
+        let replacementValue: FLEXReplicaPatchValue
+    }
 
-    /// Creates an inactive reversible override for one selected object property.
+    private let defaults: UserDefaults
+    private let storageKey: String
+
+    public init(defaults: UserDefaults = .standard,
+                storageKey: String = "FLEXReplica.savedPropertyPatches.v1") {
+        self.defaults = defaults
+        self.storageKey = storageKey
+        if let data = defaults.data(forKey: storageKey),
+           let saved = try? JSONDecoder().decode([SavedPatch].self, from: data) {
+            self.patches = saved.map { item in
+                FLEXReplicaPropertyPatch(id: item.id,
+                                         name: item.name,
+                                         className: item.className,
+                                         objectAddress: "not linked",
+                                         propertyName: item.propertyName,
+                                         originalValue: item.originalValue,
+                                         replacementValue: item.replacementValue,
+                                         targetObject: nil,
+                                         lastError: "Patch salvo. Selecione um objeto desta classe e vincule-o antes de ativar.")
+            }
+        }
+    }
+
+    /// Creates and saves an inactive, named override for one selected object property.
     @discardableResult
     public func createPatch(on object: AnyObject,
                             snapshot: ObjectSnapshot,
                             property: InspectedProperty,
+                            name: String,
                             replacementValue: FLEXReplicaPatchValue) -> String? {
         guard property.isWritable, let kind = property.editableKind else {
             return "Esta propriedade não é editável por este inspetor."
@@ -113,10 +150,9 @@ public final class FLEXReplicaPatchStore: ObservableObject {
         guard replacementValue.matches(kind) else {
             return "O valor não corresponde ao tipo \(kind.label)."
         }
-        if patches.contains(where: {
-            $0.objectAddress == snapshot.address && $0.propertyName == property.name && $0.targetObject === object
-        }) {
-            return "Já existe um patch para essa propriedade deste objeto."
+        let cleanName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleanName.isEmpty else {
+            return "Digite um nome para salvar o patch."
         }
         guard let originalValue = readValue(from: object, propertyName: property.name, kind: kind) else {
             return "Não foi possível ler a propriedade com segurança."
@@ -125,13 +161,49 @@ public final class FLEXReplicaPatchStore: ObservableObject {
             return "O valor novo é igual ao valor atual."
         }
 
-        let patch = FLEXReplicaPropertyPatch(className: snapshot.className,
+        let patch = FLEXReplicaPropertyPatch(name: cleanName,
+                                             className: snapshot.className,
                                              objectAddress: snapshot.address,
                                              propertyName: property.name,
                                              originalValue: originalValue,
                                              replacementValue: replacementValue,
                                              targetObject: object)
         patches.insert(patch, at: 0)
+        persist()
+        return nil
+    }
+
+    /// Rebinds a saved definition to the currently selected live object of the same class.
+    @discardableResult
+    public func bind(_ patch: FLEXReplicaPropertyPatch,
+                     to object: AnyObject,
+                     snapshot: ObjectSnapshot) -> String? {
+        guard patches.contains(where: { $0.id == patch.id }) else {
+            return "Este patch não está mais na lista."
+        }
+        guard !patch.isActive else {
+            return "Desative o patch antes de vinculá-lo a outro objeto."
+        }
+        guard snapshot.className == patch.className else {
+            return "Este patch foi salvo para \(patch.className), mas o objeto selecionado é \(snapshot.className)."
+        }
+        guard let property = snapshot.properties.first(where: { $0.name == patch.propertyName }),
+              property.isWritable,
+              property.editableKind == patch.replacementValue.kind else {
+            return "O objeto selecionado não tem uma propriedade compatível chamada \(patch.propertyName)."
+        }
+        guard let currentValue = readValue(from: object, propertyName: patch.propertyName,
+                                           kind: patch.replacementValue.kind) else {
+            return "Não foi possível ler a propriedade do objeto selecionado."
+        }
+        guard currentValue != patch.replacementValue else {
+            return "A propriedade já contém o valor deste patch."
+        }
+        patch.originalValue = currentValue
+        patch.objectAddress = snapshot.address
+        patch.targetObject = object
+        patch.lastError = nil
+        persist()
         return nil
     }
 
@@ -143,7 +215,15 @@ public final class FLEXReplicaPatchStore: ObservableObject {
         }
         guard patch.isActive != isActive else { return nil }
         guard let target = patch.targetObject else {
-            patch.lastError = "O objeto selecionado não está mais disponível."
+            patch.lastError = "Selecione um objeto compatível e vincule este patch antes de ativá-lo."
+            return patch.lastError
+        }
+        if isActive,
+           let conflicting = patches.first(where: {
+               $0.id != patch.id && $0.isActive && $0.propertyName == patch.propertyName &&
+               ($0.targetObject.map { $0 === target } ?? false)
+           }) {
+            patch.lastError = "Desative primeiro o patch \(conflicting.name) para esta propriedade."
             return patch.lastError
         }
         guard let currentValue = readValue(from: target, propertyName: patch.propertyName,
@@ -163,6 +243,7 @@ public final class FLEXReplicaPatchStore: ObservableObject {
             guard currentValue == patch.replacementValue else {
                 patch.isActive = false
                 patch.lastError = "O valor mudou externamente; foi preservado ao desativar."
+                persist()
                 return nil
             }
             value = patch.originalValue
@@ -173,10 +254,11 @@ public final class FLEXReplicaPatchStore: ObservableObject {
         }
         patch.isActive = isActive
         patch.lastError = nil
+        persist()
         return nil
     }
 
-    /// Removes a patch. An active override must be restored successfully first.
+    /// Removes a saved patch. An active override is restored before its definition is deleted.
     @discardableResult
     public func remove(_ patch: FLEXReplicaPropertyPatch) -> String? {
         if patch.isActive {
@@ -187,13 +269,35 @@ public final class FLEXReplicaPatchStore: ObservableObject {
             }
         }
         patches.removeAll { $0.id == patch.id }
+        persist()
         return nil
     }
 
     public func refreshAvailability() {
+        var didChange = false
         for patch in patches where patch.targetObject == nil {
-            patch.lastError = "Objeto indisponível; o patch não pode ser reaplicado."
+            if patch.isActive {
+                patch.isActive = false
+                didChange = true
+            }
+            if patch.lastError == nil {
+                patch.lastError = "Patch salvo, mas sem objeto vinculado. Selecione o objeto e vincule-o para usar."
+            }
         }
+        if didChange { persist() }
+    }
+
+    private func persist() {
+        let saved = patches.map {
+            SavedPatch(id: $0.id,
+                       name: $0.name,
+                       className: $0.className,
+                       propertyName: $0.propertyName,
+                       originalValue: $0.originalValue,
+                       replacementValue: $0.replacementValue)
+        }
+        guard let data = try? JSONEncoder().encode(saved) else { return }
+        defaults.set(data, forKey: storageKey)
     }
 
     private func readValue(from object: AnyObject,

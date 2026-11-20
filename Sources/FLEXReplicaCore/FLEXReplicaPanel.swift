@@ -22,6 +22,7 @@ public struct FLEXReplicaPanel: View {
     @State private var showClassMethods = false
     @State private var selectedSection: FLEXReplicaSection = .views
     @State private var propertyDrafts: [String: String] = [:]
+    @State private var patchNameDrafts: [String: String] = [:]
     private let preferences = PreferencesStore()
 
     public init() {}
@@ -31,7 +32,8 @@ public struct FLEXReplicaPanel: View {
             header
             Picker("Inspector section", selection: $selectedSection) {
                 ForEach(FLEXReplicaSection.allCases) { section in
-                    Text(section.rawValue).tag(section)
+                    Text(section == .patches ? "Patches (\(patchStore.patches.count))" : section.rawValue)
+                        .tag(section)
                 }
             }
             .pickerStyle(.segmented)
@@ -227,6 +229,17 @@ public struct FLEXReplicaPanel: View {
                         .lineLimit(1)
                 }
             }
+            if let selected = session.selectedObject {
+                HStack {
+                    Text("Selected: \(selected.className)")
+                        .font(.caption2.monospaced())
+                        .lineLimit(1)
+                    Spacer(minLength: 6)
+                    Button("Editar / salvar patch") { selectedSection = .object }
+                        .buttonStyle(.borderedProminent)
+                        .font(.caption)
+                }
+            }
             Divider()
 
             #if canImport(UIKit)
@@ -257,7 +270,7 @@ public struct FLEXReplicaPanel: View {
                         }
 
                         detailSection(title: "Properties (\(object.properties.count))") {
-                            Text("Para editar uma string, digite o novo texto e toque em Create Patch. Depois, ative ou desative o patch na aba Patches.")
+                            Text("Digite o novo valor, dê um nome ao patch e toque em Salvar patch. Ele ficará na aba Patches para ativar ou desativar.")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             ForEach(object.properties) { property in
@@ -270,17 +283,21 @@ public struct FLEXReplicaPanel: View {
                                         .font(.caption2.monospaced())
                                         .foregroundStyle(.tertiary)
                                     if property.isWritable, let kind = property.editableKind {
-                                        TextField("New \(kind.label) value", text: draftBinding(for: property))
+                                        TextField("Nome do patch", text: patchNameBinding(for: property))
+                                            .textFieldStyle(.roundedBorder)
+                                            .autocorrectionDisabled()
+                                        TextField("Novo valor (\(kind.label))", text: draftBinding(for: property))
                                             .textFieldStyle(.roundedBorder)
                                             .autocorrectionDisabled()
                                             .textInputAutocapitalization(.never)
                                         Button {
                                             let rawValue = propertyDrafts[property.id] ?? defaultDraft(for: property)
-                                            if session.createPropertyPatch(for: property, rawValue: rawValue) {
+                                            let patchName = patchNameDrafts[property.id] ?? defaultPatchName(for: property)
+                                            if session.createPropertyPatch(for: property, name: patchName, rawValue: rawValue) {
                                                 selectedSection = .patches
                                             }
                                         } label: {
-                                            Label("Create Patch", systemImage: "plus.circle")
+                                            Label("Salvar patch", systemImage: "bookmark.fill")
                                                 .font(.caption.weight(.semibold))
                                         }
                                         .buttonStyle(.bordered)
@@ -310,16 +327,16 @@ public struct FLEXReplicaPanel: View {
                     .padding(.vertical, 4)
                 }
             } else {
-                emptyState("Select a view in the Views tab to inspect its object", symbol: "cube.transparent")
+                emptyState("Selecione uma view em Views para editar propriedades e salvar um patch", symbol: "cube.transparent")
             }
         }
     }
 
     private var patchesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Temporary property overrides — use the switch to apply or restore each value")
+            Text("Patches salvos — use o controle para aplicar ou restaurar cada valor")
                 .font(.subheadline.weight(.semibold))
-            Text("Patches affect one selected object in this running app. They stay in memory and can be restored here.")
+            Text("Nome e valor ficam salvos. Após reiniciar o app, selecione o objeto novamente e toque em Vincular antes de ativar.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -330,7 +347,7 @@ public struct FLEXReplicaPanel: View {
             }
 
             if patchStore.patches.isEmpty {
-                emptyState("No patches yet — select an object and create one", symbol: "switch.2")
+                emptyState("Nenhum patch salvo. Selecione uma view, edite a propriedade e toque em Salvar patch.", symbol: "switch.2")
             } else {
                 ScrollView {
                     VStack(spacing: 8) {
@@ -338,6 +355,10 @@ public struct FLEXReplicaPanel: View {
                             PropertyPatchRow(patch: patch,
                                              onToggle: { isActive in
                                                  _ = session.setPatchActive(isActive, for: patch)
+                                             },
+                                             canBind: session.selectedObject != nil,
+                                             onBind: {
+                                                 _ = session.bindPropertyPatchToSelectedObject(patch)
                                              },
                                              onRemove: {
                                                  _ = session.removePatch(patch)
@@ -354,10 +375,21 @@ public struct FLEXReplicaPanel: View {
         property.valueDescription == "nil" ? "" : property.valueDescription
     }
 
+    private func defaultPatchName(for property: InspectedProperty) -> String {
+        "Patch \(property.name)"
+    }
+
     private func draftBinding(for property: InspectedProperty) -> Binding<String> {
         Binding(
             get: { propertyDrafts[property.id] ?? defaultDraft(for: property) },
             set: { propertyDrafts[property.id] = $0 }
+        )
+    }
+
+    private func patchNameBinding(for property: InspectedProperty) -> Binding<String> {
+        Binding(
+            get: { patchNameDrafts[property.id] ?? defaultPatchName(for: property) },
+            set: { patchNameDrafts[property.id] = $0 }
         )
     }
 
@@ -446,6 +478,8 @@ private struct ViewNodeRow: View {
 private struct PropertyPatchRow: View {
     @ObservedObject var patch: FLEXReplicaPropertyPatch
     let onToggle: (Bool) -> Void
+    let canBind: Bool
+    let onBind: () -> Void
     let onRemove: () -> Void
 
     var body: some View {
@@ -465,15 +499,22 @@ private struct PropertyPatchRow: View {
                 if let error = patch.lastError {
                     Text(error)
                         .font(.caption2)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(patch.isBound ? Color.red : Color.orange)
+                }
+                if !patch.isBound {
+                    Button("Vincular ao objeto selecionado", action: onBind)
+                        .font(.caption)
+                        .buttonStyle(.bordered)
+                        .disabled(!canBind)
                 }
             }
             Spacer(minLength: 0)
-            Toggle("Active", isOn: Binding(
+            Toggle("Ativo", isOn: Binding(
                 get: { patch.isActive },
                 set: { onToggle($0) }
             ))
             .labelsHidden()
+            .disabled(!patch.isBound)
             Button(role: .destructive, action: onRemove) {
                 Image(systemName: "trash")
             }

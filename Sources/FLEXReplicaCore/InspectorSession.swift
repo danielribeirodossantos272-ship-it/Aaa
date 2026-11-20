@@ -54,7 +54,7 @@ public final class InspectorSession: ObservableObject {
     }
 
     @discardableResult
-    public func createPropertyPatch(for property: InspectedProperty, rawValue: String) -> Bool {
+    public func createPropertyPatch(for property: InspectedProperty, name: String, rawValue: String) -> Bool {
         guard let object = inspectedObject, let snapshot = selectedObject else {
             patchActionError = "Selecione novamente o objeto antes de criar um patch."
             return false
@@ -65,7 +65,23 @@ public final class InspectorSession: ObservableObject {
             return false
         }
         if let error = patchStore.createPatch(on: object, snapshot: snapshot,
-                                              property: property, replacementValue: value) {
+                                              property: property, name: name,
+                                              replacementValue: value) {
+            patchActionError = error
+            return false
+        }
+        patchActionError = nil
+        refreshSelectedObject()
+        return true
+    }
+
+    @discardableResult
+    public func bindPropertyPatchToSelectedObject(_ patch: FLEXReplicaPropertyPatch) -> Bool {
+        guard let object = inspectedObject, let snapshot = selectedObject else {
+            patchActionError = "Selecione uma view na aba Views antes de vincular o patch."
+            return false
+        }
+        if let error = patchStore.bind(patch, to: object, snapshot: snapshot) {
             patchActionError = error
             return false
         }

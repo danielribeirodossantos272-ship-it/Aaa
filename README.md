@@ -7,18 +7,19 @@ Projeto próprio de inspeção de runtime, inspirado em ferramentas de developer
 - Busca de classes Objective-C, métodos, selectors, propriedades e type encodings.
 - Aba **Views** com hierarquia expansível, frames, alpha/hidden e seleção de uma view.
 - Aba **Object** com snapshot de propriedades/ivars e editores para propriedades graváveis `NSString`/`NSNumber`, além de strings detectadas pelo valor em runtime e escalares numéricos/booleanos reconhecidos.
-- Aba **Patches**: cria uma entrada inativa para um valor substituto, mostra-a na lista e permite ativar, desativar ou remover. Ao ativar, registra o valor-base atual; ao desativar, restaura esse valor. Se o app tiver alterado a propriedade desde a ativação, a ferramenta preserva o valor atual em vez de sobrescrevê-lo.
+- Aba **Patches**: cria patches com nome escolhido pelo usuário, salva nome/propriedade/valor substituto em `UserDefaults` e permite ativar, desativar ou remover. Podem existir várias variantes nomeadas para a mesma propriedade, mas somente uma pode ficar ativa por objeto/propriedade. Ao ativar, registra o valor-base atual; ao desativar, restaura esse valor. Se o app tiver alterado a propriedade desde a ativação, a ferramenta preserva o valor atual em vez de sobrescrevê-lo.
 - Botão **FLEX** flutuante e arrastável, instalado depois que a dylib entra no processo e o app hospedeiro fica ativo. Tocar nele abre o painel; o painel deixa de surgir automaticamente.
 - Entrypoints C `FLEXReplicaInstallFloatingButton()` e `FLEXReplicaShowMenu()` no produto dinâmico `FLEXReplicaCore`.
 
-Os patches são overrides de **valores de propriedades de um único objeto selecionado**. Eles ficam em memória durante o processo e mantêm uma referência fraca ao objeto; não persistem após reiniciar o app e podem ficar indisponíveis se o objeto for destruído. Isso não é um patch de executável, de implementação de método ou de código arbitrário, nem uma implementação de paridade total com FLEX 3.
+Os patches são overrides de **valores de propriedades de um único objeto selecionado**. O nome e a definição ficam salvos entre execuções, mas a referência ao objeto é temporária: após reiniciar o app, selecione novamente o objeto compatível, abra **Patches** e toque em **Vincular ao objeto selecionado** antes de ativar. Se o objeto for destruído durante a execução, também será necessário vinculá-lo novamente. Isso não é um patch de executável, de implementação de método ou de código arbitrário, nem uma implementação de paridade total com FLEX 3.
 
 ## Uso do painel
 
 1. Com a dylib já carregada no app de teste, espere o botão flutuante **FLEX** aparecer.
-2. Abra **Views**, selecione uma view e entre em **Object**.
-3. Em uma propriedade editável, informe o novo valor e toque em **Create Patch**.
-4. O painel muda para **Patches**; a nova entrada começa desligada. Ative o controle para aplicar o valor, desligue para restaurar o valor-base ou remova a entrada.
+2. Abra **Views**, toque na view desejada e use **Editar / salvar patch** para abrir **Object**.
+3. Na propriedade editável, digite o novo valor, escolha o **Nome do patch** e toque em **Salvar patch**.
+4. O painel muda para **Patches**; a entrada aparece com o nome escolhido e começa desligada. Ative o controle para aplicar o valor, desligue para restaurar o valor-base ou remova a entrada.
+5. Depois de reiniciar o app, selecione o objeto novamente, abra **Patches**, vincule a entrada ao objeto e então ative-a.
 
 A biblioteca não se carrega dentro de um app por conta própria. O app hospedeiro ou um loader autorizado ainda precisa carregá-la e assinar os binários corretamente. Esta mudança não altera nem reempacota nenhuma IPA. A variante para iPhone é `dist/ios-device-arm64/libFLEXReplicaCore.dylib`; a variante de simulador é separada.
 
