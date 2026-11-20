@@ -1,8 +1,27 @@
 import Foundation
 import Combine
+#if canImport(UIKit)
+import UIKit
+import QuartzCore
+#endif
 #if canImport(FLEXReplicaRuntimeBridge)
 import FLEXReplicaRuntimeBridge
 #endif
+
+enum FLEXReplicaTextPatchKey {
+    static let prefix = "__FLEXReplica."
+    static let attributedText = "__FLEXReplica.text.attributedText"
+    static let attributedPlaceholder = "__FLEXReplica.text.attributedPlaceholder"
+    static let buttonConfigurationTitle = "__FLEXReplica.button.configuration.title"
+    static let layerString = "__FLEXReplica.layer.string"
+    static let buttonTitlePrefix = "__FLEXReplica.button.title."
+    static let buttonAttributedTitlePrefix = "__FLEXReplica.button.attributedTitle."
+    static let segmentTitlePrefix = "__FLEXReplica.segment.title."
+
+    static func buttonTitle(_ state: UInt) -> String { buttonTitlePrefix + String(state) }
+    static func buttonAttributedTitle(_ state: UInt) -> String { buttonAttributedTitlePrefix + String(state) }
+    static func segmentTitle(_ index: Int) -> String { segmentTitlePrefix + String(index) }
+}
 
 public enum FLEXReplicaPropertyValueKind: String, Hashable, Sendable {
     case string
@@ -116,6 +135,13 @@ public final class FLEXReplicaPatchStore: ObservableObject {
 
     private let defaults: UserDefaults
     private let storageKey: String
+#if canImport(UIKit)
+    private enum RuntimeTextBackup {
+        case attributed(NSAttributedString)
+        case buttonConfiguration(UIButton.Configuration)
+    }
+    private var runtimeTextBackups: [UUID: RuntimeTextBackup] = [:]
+#endif
 
     public init(defaults: UserDefaults = .standard,
                 storageKey: String = "FLEXReplica.savedPropertyPatches.v1") {
@@ -187,17 +213,16 @@ public final class FLEXReplicaPatchStore: ObservableObject {
         guard snapshot.className == patch.className else {
             return "Este patch foi salvo para \(patch.className), mas o objeto selecionado é \(snapshot.className)."
         }
-        guard let property = snapshot.properties.first(where: { $0.name == patch.propertyName }),
-              property.isWritable,
-              property.editableKind == patch.replacementValue.kind else {
-            return "O objeto selecionado não tem uma propriedade compatível chamada \(patch.propertyName)."
+        if !patch.propertyName.hasPrefix(FLEXReplicaTextPatchKey.prefix) {
+            guard let property = snapshot.properties.first(where: { $0.name == patch.propertyName }),
+                  property.isWritable,
+                  property.editableKind == patch.replacementValue.kind else {
+                return "O objeto selecionado não tem uma propriedade compatível chamada \(patch.propertyName)."
+            }
         }
         guard let currentValue = readValue(from: object, propertyName: patch.propertyName,
                                            kind: patch.replacementValue.kind) else {
             return "Não foi possível ler a propriedade do objeto selecionado."
-        }
-        guard currentValue != patch.replacementValue else {
-            return "A propriedade já contém o valor deste patch."
         }
         patch.originalValue = currentValue
         patch.objectAddress = snapshot.address
@@ -233,9 +258,15 @@ public final class FLEXReplicaPatchStore: ObservableObject {
         }
         let value: FLEXReplicaPatchValue
         if isActive {
-            guard currentValue != patch.replacementValue else {
-                patch.lastError = "A propriedade já tem o valor do patch."
-                return patch.lastError
+            if currentValue == patch.replacementValue {
+                patch.originalValue = currentValue
+#if canImport(UIKit)
+                captureRuntimeTextBackup(for: patch, from: target)
+#endif
+                patch.isActive = true
+                patch.lastError = nil
+                persist()
+                return nil
             }
             patch.originalValue = currentValue
             value = patch.replacementValue
@@ -243,17 +274,41 @@ public final class FLEXReplicaPatchStore: ObservableObject {
             guard currentValue == patch.replacementValue else {
                 patch.isActive = false
                 patch.lastError = "O valor mudou externamente; foi preservado ao desativar."
+#if canImport(UIKit)
+                runtimeTextBackups.removeValue(forKey: patch.id)
+#endif
                 persist()
                 return nil
             }
             value = patch.originalValue
         }
-        guard writeValue(value, to: target, propertyName: patch.propertyName) else {
+        if isActive {
+#if canImport(UIKit)
+            captureRuntimeTextBackup(for: patch, from: target)
+#endif
+        }
+        let didWrite: Bool
+#if canImport(UIKit)
+        if !isActive, let restored = restoreRuntimeTextBackup(for: patch, on: target) {
+            didWrite = restored
+        } else {
+            didWrite = writeValue(value, to: target, propertyName: patch.propertyName)
+        }
+#else
+        didWrite = writeValue(value, to: target, propertyName: patch.propertyName)
+#endif
+        guard didWrite else {
+#if canImport(UIKit)
+            runtimeTextBackups.removeValue(forKey: patch.id)
+#endif
             patch.lastError = isActive ? "Não foi possível ativar o patch." : "Não foi possível restaurar o valor original."
             return patch.lastError
         }
         patch.isActive = isActive
         patch.lastError = nil
+#if canImport(UIKit)
+        if !isActive { runtimeTextBackups.removeValue(forKey: patch.id) }
+#endif
         persist()
         return nil
     }
@@ -303,6 +358,12 @@ public final class FLEXReplicaPatchStore: ObservableObject {
     private func readValue(from object: AnyObject,
                            propertyName: String,
                            kind: FLEXReplicaPropertyValueKind) -> FLEXReplicaPatchValue? {
+#if canImport(UIKit)
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.prefix) {
+            guard let value = readRuntimeText(from: object, propertyName: propertyName) else { return nil }
+            return .string(value)
+        }
+#endif
         #if canImport(FLEXReplicaRuntimeBridge)
         var rawValue: AnyObject?
         guard FLEXReplicaTryGetObjectValue(object, propertyName, &rawValue) else { return nil }
@@ -328,6 +389,12 @@ public final class FLEXReplicaPatchStore: ObservableObject {
     private func writeValue(_ value: FLEXReplicaPatchValue,
                             to object: AnyObject,
                             propertyName: String) -> Bool {
+#if canImport(UIKit)
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.prefix) {
+            guard case .string(let string) = value else { return false }
+            return writeRuntimeText(string, to: object, propertyName: propertyName)
+        }
+#endif
         #if canImport(FLEXReplicaRuntimeBridge)
         return FLEXReplicaTrySetObjectValue(object, propertyName, value.foundationValue)
         #else
@@ -336,6 +403,175 @@ public final class FLEXReplicaPatchStore: ObservableObject {
         return true
         #endif
     }
+
+#if canImport(UIKit)
+    private func readRuntimeText(from object: AnyObject, propertyName: String) -> String? {
+        if propertyName == FLEXReplicaTextPatchKey.attributedText {
+            return attributedText(of: object)?.string
+        }
+        if propertyName == FLEXReplicaTextPatchKey.attributedPlaceholder {
+            return (object as? UITextField)?.attributedPlaceholder?.string
+        }
+        if propertyName == FLEXReplicaTextPatchKey.buttonConfigurationTitle {
+            return (object as? UIButton)?.configuration?.title
+        }
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.buttonTitlePrefix),
+           let raw = UInt(String(propertyName.dropFirst(FLEXReplicaTextPatchKey.buttonTitlePrefix.count))),
+           let button = object as? UIButton {
+            return button.title(for: UIControl.State(rawValue: raw))
+        }
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix),
+           let raw = UInt(String(propertyName.dropFirst(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix.count))),
+           let button = object as? UIButton {
+            return button.attributedTitle(for: UIControl.State(rawValue: raw))?.string
+        }
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.segmentTitlePrefix),
+           let index = Int(String(propertyName.dropFirst(FLEXReplicaTextPatchKey.segmentTitlePrefix.count))),
+           let segmented = object as? UISegmentedControl,
+           index >= 0, index < segmented.numberOfSegments {
+            return segmented.titleForSegment(at: index)
+        }
+        if propertyName == FLEXReplicaTextPatchKey.layerString,
+           let layer = object as? CATextLayer {
+            if let attributed = layer.string as? NSAttributedString { return attributed.string }
+            if let string = layer.string as? NSString { return string as String }
+            return layer.string as? String
+        }
+        return nil
+    }
+
+    private func writeRuntimeText(_ string: String, to object: AnyObject, propertyName: String) -> Bool {
+        if propertyName == FLEXReplicaTextPatchKey.attributedText {
+            guard let current = attributedText(of: object) else { return false }
+            let replacement = styled(string, like: current)
+            if let label = object as? UILabel { label.attributedText = replacement; return true }
+            if let field = object as? UITextField { field.attributedText = replacement; return true }
+            if let textView = object as? UITextView { textView.attributedText = replacement; return true }
+            return false
+        }
+        if propertyName == FLEXReplicaTextPatchKey.attributedPlaceholder,
+           let field = object as? UITextField,
+           let current = field.attributedPlaceholder {
+            field.attributedPlaceholder = styled(string, like: current)
+            return true
+        }
+        if propertyName == FLEXReplicaTextPatchKey.buttonConfigurationTitle,
+           let button = object as? UIButton,
+           var configuration = button.configuration {
+            configuration.title = string
+            button.configuration = configuration
+            return true
+        }
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.buttonTitlePrefix),
+           let raw = UInt(String(propertyName.dropFirst(FLEXReplicaTextPatchKey.buttonTitlePrefix.count))),
+           let button = object as? UIButton {
+            button.setTitle(string, for: UIControl.State(rawValue: raw))
+            return true
+        }
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix),
+           let raw = UInt(String(propertyName.dropFirst(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix.count))),
+           let button = object as? UIButton {
+            let state = UIControl.State(rawValue: raw)
+            let current = button.attributedTitle(for: state)
+            button.setAttributedTitle(styled(string, like: current), for: state)
+            return true
+        }
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.segmentTitlePrefix),
+           let index = Int(String(propertyName.dropFirst(FLEXReplicaTextPatchKey.segmentTitlePrefix.count))),
+           let segmented = object as? UISegmentedControl,
+           index >= 0, index < segmented.numberOfSegments {
+            segmented.setTitle(string, forSegmentAt: index)
+            return true
+        }
+        if propertyName == FLEXReplicaTextPatchKey.layerString,
+           let layer = object as? CATextLayer {
+            if let current = layer.string as? NSAttributedString {
+                layer.string = styled(string, like: current)
+            } else {
+                layer.string = string as NSString
+            }
+            return true
+        }
+        return false
+    }
+
+    private func captureRuntimeTextBackup(for patch: FLEXReplicaPropertyPatch, from object: AnyObject) {
+        let key = patch.propertyName
+        if key == FLEXReplicaTextPatchKey.buttonConfigurationTitle,
+           let configuration = (object as? UIButton)?.configuration {
+            runtimeTextBackups[patch.id] = .buttonConfiguration(configuration)
+            return
+        }
+        if let attributed = attributedText(for: object, propertyName: key) {
+            runtimeTextBackups[patch.id] = .attributed(attributed)
+        }
+    }
+
+    private func restoreRuntimeTextBackup(for patch: FLEXReplicaPropertyPatch, on object: AnyObject) -> Bool? {
+        guard let backup = runtimeTextBackups[patch.id] else { return nil }
+        switch backup {
+        case .buttonConfiguration(let configuration):
+            guard let button = object as? UIButton else { return false }
+            button.configuration = configuration
+            return true
+        case .attributed(let attributed):
+            let key = patch.propertyName
+            if key == FLEXReplicaTextPatchKey.attributedText {
+                return setAttributedText(attributed, on: object)
+            }
+            if key == FLEXReplicaTextPatchKey.attributedPlaceholder,
+               let field = object as? UITextField {
+                field.attributedPlaceholder = attributed
+                return true
+            }
+            if key.hasPrefix(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix),
+               let raw = UInt(String(key.dropFirst(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix.count))),
+               let button = object as? UIButton {
+                button.setAttributedTitle(attributed, for: UIControl.State(rawValue: raw))
+                return true
+            }
+            if key == FLEXReplicaTextPatchKey.layerString, let layer = object as? CATextLayer {
+                layer.string = attributed
+                return true
+            }
+            return false
+        }
+    }
+
+    private func attributedText(of object: AnyObject) -> NSAttributedString? {
+        if let label = object as? UILabel { return label.attributedText }
+        if let field = object as? UITextField { return field.attributedText }
+        if let textView = object as? UITextView { return textView.attributedText }
+        return nil
+    }
+
+    private func attributedText(for object: AnyObject, propertyName: String) -> NSAttributedString? {
+        if propertyName == FLEXReplicaTextPatchKey.attributedText { return attributedText(of: object) }
+        if propertyName == FLEXReplicaTextPatchKey.attributedPlaceholder {
+            return (object as? UITextField)?.attributedPlaceholder
+        }
+        if propertyName.hasPrefix(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix),
+           let raw = UInt(String(propertyName.dropFirst(FLEXReplicaTextPatchKey.buttonAttributedTitlePrefix.count))) {
+            return (object as? UIButton)?.attributedTitle(for: UIControl.State(rawValue: raw))
+        }
+        if propertyName == FLEXReplicaTextPatchKey.layerString {
+            return (object as? CATextLayer)?.string as? NSAttributedString
+        }
+        return nil
+    }
+
+    private func setAttributedText(_ value: NSAttributedString, on object: AnyObject) -> Bool {
+        if let label = object as? UILabel { label.attributedText = value; return true }
+        if let field = object as? UITextField { field.attributedText = value; return true }
+        if let textView = object as? UITextView { textView.attributedText = value; return true }
+        return false
+    }
+
+    private func styled(_ string: String, like original: NSAttributedString?) -> NSAttributedString {
+        guard let original, original.length > 0 else { return NSAttributedString(string: string) }
+        return NSAttributedString(string: string, attributes: original.attributes(at: 0, effectiveRange: nil))
+    }
+#endif
 }
 
 private extension FLEXReplicaPatchValue {

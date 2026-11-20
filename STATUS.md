@@ -9,6 +9,14 @@
 - O inicializador da dylib agora instala um botão **FLEX** flutuante e arrastável depois que o app hospedeiro fica ativo; tocar no botão abre o painel. A abertura automática do painel foi removida.
 - A ponte Objective-C executa leituras/escritas KVC com captura de exceções. O projeto não implementa patching de código, métodos, executável, loader genérico ou bypass e nenhuma IPA foi alterada.
 
+## Aba Textos — aguardando CI
+
+- Adicionado catálogo para textos dos controles UIKit presentes e visíveis na janela ativa: labels, campos/placeholders, text views, search bars, títulos de botões e estados/configuração, segmentos, itens de navegação/toolbar e `CATextLayer`.
+- Cada linha agora oferece campos para texto substituto e nome, com ação explícita **Salvar patch**. O patch fica na aba **Patches**, é ativado/desativado e pode ser vinculado novamente após reinício ao selecionar o mesmo alvo na aba Textos.
+- Títulos especiais usam setters UIKit diretos; a formatação completa de `NSAttributedString` é guardada em memória ao ativar e restaurada ao desativar. Se o texto já coincidir com o replacement ao vincular, o estado pode ser alternado sem sobrescrever a alteração existente.
+- Adicionados testes para descoberta de controles, filtro de conteúdo oculto, título normal/configurado, segmento, rebinding e restauração de formatação. A workflow atual apenas compila device/simulador; XCTest não é executado por ela.
+- **Pendente:** compilação macOS da nova versão e validação visual no app hospedeiro. A cobertura limita-se a textos visíveis em controles UIKit materializados; não alcança todos os modelos, recursos de localização não exibidos ou renderizações SwiftUI/customizadas.
+
 ## Pesquisa de referência
 
 As fontes públicas oficiais do FLEX descrevem inspeção/edição de views e valores de objetos, rede, logs, heap, sandbox, bancos SQLite/Realm e `NSUserDefaults`. Não documentam uma função genérica de criação/ativação de patches como recurso do FLEX. Fontes: [README oficial do FLEX](https://github.com/FLEXTool/FLEX), [artigo da Flipboard](https://about.flipboard.com/engineering/flex/) e [Objective-C Runtime da Apple](https://developer.apple.com/documentation/objectivec/objective-c-runtime). A implementação atual é uma ferramenta independente e limitada a patches de propriedades.

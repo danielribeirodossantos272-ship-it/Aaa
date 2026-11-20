@@ -21,6 +21,7 @@ public enum FLEXReplicaMenuLauncher {
         guard !(presenter is UIHostingController<FLEXReplicaPanel>) else { return }
 
         let host = UIHostingController(rootView: FLEXReplicaPanel())
+        host.view.accessibilityIdentifier = "FLEXReplicaPanelHost"
         host.modalPresentationStyle = .pageSheet
         host.isModalInPresentation = false
         FLEXReplicaFloatingButtonController.shared.setHidden(true)
@@ -70,6 +71,7 @@ public final class FLEXReplicaFloatingButtonController: NSObject {
         control.frame = CGRect(x: 0, y: 0, width: 56, height: 56)
         control.addTarget(self, action: #selector(didTap), for: .touchUpInside)
         control.addGestureRecognizer(UIPanGestureRecognizer(target: self, action: #selector(didPan(_:))))
+        control.accessibilityIdentifier = "FLEXReplicaFloatingButton"
 
         let safeFrame = window.safeAreaLayoutGuide.layoutFrame
         control.center = CGPoint(x: safeFrame.maxX - 34,

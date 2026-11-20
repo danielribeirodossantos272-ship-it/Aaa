@@ -7,6 +7,7 @@ private enum FLEXReplicaSection: String, CaseIterable, Identifiable, Hashable {
     case views = "Views"
     case classes = "Classes"
     case object = "Object"
+    case texts = "Textos"
     case patches = "Patches"
 
     var id: String { rawValue }
@@ -70,6 +71,8 @@ public struct FLEXReplicaPanel: View {
         .onChange(of: selectedSection) { section in
             if section == .object {
                 session.refreshSelectedObject()
+            } else if section == .texts {
+                refreshTextElements()
             } else if section == .patches {
                 patchStore.refreshAvailability()
             }
@@ -95,14 +98,15 @@ public struct FLEXReplicaPanel: View {
             }
             Spacer()
             #if canImport(UIKit)
-            if selectedSection == .views {
+            if selectedSection == .views || selectedSection == .texts {
                 Button {
-                    refreshViewHierarchy()
+                    if selectedSection == .views { refreshViewHierarchy() }
+                    else { refreshTextElements() }
                 } label: {
                     Image(systemName: "arrow.clockwise")
                 }
                 .buttonStyle(.bordered)
-                .accessibilityLabel("Refresh view hierarchy")
+                .accessibilityLabel(selectedSection == .views ? "Refresh view hierarchy" : "Atualizar textos")
             }
             #endif
             Button("Close") { dismiss() }
@@ -119,6 +123,8 @@ public struct FLEXReplicaPanel: View {
             classBrowserSection
         case .object:
             objectInspectorSection
+        case .texts:
+            textElementsSection
         case .patches:
             patchesSection
         }
@@ -344,6 +350,43 @@ public struct FLEXReplicaPanel: View {
         }
     }
 
+    private var textElementsSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Textos encontrados: \(session.textElements.count)")
+                .font(.subheadline.weight(.semibold))
+            Text("Edite o valor, dê um nome ao patch e salve. Para vincular um patch salvo depois, selecione novamente o mesmo texto.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            if let error = session.patchActionError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+            if session.textElements.isEmpty {
+                emptyState("Nenhum texto foi encontrado. Atualize a lista com a tela e os controles desejados abertos.", symbol: "text.magnifyingglass")
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(session.textElements) { element in
+                            TextElementRow(element: element,
+                                           onSave: { name, replacement in
+                                               let saved = session.createTextPatch(for: element, name: name, replacement: replacement)
+                                               if !saved { return session.patchActionError ?? "Não foi possível salvar este patch." }
+                                               return nil
+                                           },
+                                           onSelect: {
+                                               session.inspectTextElement(element)
+                                               selectedSection = .object
+                                           },
+                                           onSaved: { selectedSection = .patches })
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
     private var patchesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Patches salvos — use o controle para aplicar ou restaurar cada valor")
@@ -444,10 +487,85 @@ public struct FLEXReplicaPanel: View {
         guard let window = foregroundWindow else { return }
         session.inspectViewTree(window)
     }
+
+    private func refreshTextElements() {
+        guard let window = foregroundWindow else { return }
+        session.refreshTextElements(in: window)
+    }
     #endif
 }
 
 #if canImport(UIKit)
+@MainActor
+private struct TextElementRow: View {
+    let element: FLEXReplicaTextElement
+    let onSave: (String, String) -> String?
+    let onSelect: () -> Void
+    let onSaved: () -> Void
+    @State private var patchName: String
+    @State private var replacement: String
+    @State private var error: String?
+
+    init(element: FLEXReplicaTextElement,
+         onSave: @escaping (String, String) -> String?,
+         onSelect: @escaping () -> Void,
+         onSaved: @escaping () -> Void) {
+        self.element = element
+        self.onSave = onSave
+        self.onSelect = onSelect
+        self.onSaved = onSaved
+        self._patchName = State(initialValue: "Patch \(element.source)")
+        self._replacement = State(initialValue: element.value)
+        self._error = State(initialValue: nil)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(element.source)
+                .font(.caption.monospaced().weight(.semibold))
+            Text(element.className)
+                .font(.caption2.monospaced())
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text(element.value)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(3)
+                .textSelection(.enabled)
+            TextField("Nome do patch", text: $patchName)
+                .textFieldStyle(.roundedBorder)
+                .autocorrectionDisabled()
+            TextField("Novo texto", text: $replacement)
+                .textFieldStyle(.roundedBorder)
+            if let error {
+                Text(error)
+                    .font(.caption2)
+                    .foregroundStyle(.red)
+            }
+            HStack {
+                Button("Selecionar alvo", action: onSelect)
+                    .buttonStyle(.bordered)
+                Spacer(minLength: 4)
+                Button {
+                    if let message = onSave(patchName, replacement) {
+                        error = message
+                    } else {
+                        error = nil
+                        onSaved()
+                    }
+                } label: {
+                    Label("Salvar patch", systemImage: "bookmark.fill")
+                        .font(.caption.weight(.semibold))
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
+    }
+}
+
 @MainActor
 private struct ViewNodeRow: View {
     let node: ViewNode
@@ -541,11 +659,11 @@ private struct PropertyPatchRow: View {
                         .font(.caption2)
                         .foregroundStyle(patch.isBound ? Color.red : Color.orange)
                 }
-                if !patch.isBound {
-                    Button("Vincular ao objeto selecionado", action: onBind)
+                if canBind {
+                    Button(patch.isBound ? "Revincular a este objeto" : "Vincular ao objeto selecionado", action: onBind)
                         .font(.caption)
                         .buttonStyle(.bordered)
-                        .disabled(!canBind)
+                        .disabled(patch.isActive)
                 }
             }
             Spacer(minLength: 0)

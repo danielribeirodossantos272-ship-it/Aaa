@@ -11,6 +11,7 @@ public final class InspectorSession: ObservableObject {
     @Published public private(set) var selectedClass: RuntimeClassInfo?
     @Published public private(set) var selectedObject: ObjectSnapshot?
     @Published public private(set) var rootViewTree: ViewNode?
+    @Published public private(set) var textElements: [FLEXReplicaTextElement] = []
     @Published public private(set) var patchActionError: String?
 
     public let browser = RuntimeBrowser()
@@ -37,6 +38,26 @@ public final class InspectorSession: ObservableObject {
 
     public func methods(for className: String, classMethods: Bool = false) -> [RuntimeMethodInfo] {
         browser.methods(for: className, classMethods: classMethods)
+    }
+
+    @discardableResult
+    public func createTextPatch(for element: FLEXReplicaTextElement, name: String, replacement: String) -> Bool {
+        let snapshot = objectInspector.snapshot(element.targetObject)
+        let property = InspectedProperty(id: element.id,
+                                         name: element.propertyName,
+                                         attributes: "T@\"NSString\",N",
+                                         valueDescription: element.value,
+                                         isWritable: true,
+                                         editableKind: .string)
+        if let error = patchStore.createPatch(on: element.targetObject, snapshot: snapshot,
+                                              property: property, name: name,
+                                              replacementValue: .string(replacement)) {
+            patchActionError = error
+            return false
+        }
+        inspect(element.targetObject)
+        patchActionError = nil
+        return true
     }
 
     public func inspect(_ object: AnyObject) {
@@ -115,6 +136,14 @@ public final class InspectorSession: ObservableObject {
     #if canImport(UIKit)
     public func inspectViewTree(_ root: UIView) {
         rootViewTree = viewInspector.tree(from: root)
+    }
+
+    public func refreshTextElements(in root: UIView) {
+        textElements = viewInspector.textElements(from: root)
+    }
+
+    public func inspectTextElement(_ element: FLEXReplicaTextElement) {
+        inspect(element.targetObject)
     }
 
     public func inspectView(withID id: String, in root: UIView) {
