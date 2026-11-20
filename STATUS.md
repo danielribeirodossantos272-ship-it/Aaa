@@ -1,6 +1,6 @@
 # Status da entrega
 
-## Implementado no código-fonte — aguardando CI
+## Implementado no código-fonte — build concluído
 
 - Aba **Patches** com criação de overrides inativos para propriedades Objective-C graváveis de tipos suportados (strings, números e booleanos).
 - Cada patch fica ligado a um único objeto selecionado. Ativar aplica o novo valor; desativar tenta restaurar a base capturada ao ativar; remover apaga a entrada. Se o app mudar a propriedade no meio do caminho, a alteração externa é preservada para evitar sobrescrita.
@@ -14,7 +14,7 @@ As fontes públicas oficiais do FLEX descrevem inspeção/edição de views e va
 
 ## Build e validação
 
-O código ainda não passou pela nova execução do runner macOS; aguardando build de ambas as variantes arm64 e checagem dos símbolos do botão, painel e ponte KVC. O CI anterior [#44648702004](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44648702004) validou somente a versão anterior da dylib.
+O workflow [#44654581512](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44654581512) passou: compilou as dylibs arm64 para iPhone e iOS Simulator e validou os símbolos do botão, painel e ponte KVC. O ZIP foi baixado, testado com `unzip -t` e contém as duas variantes e seus headers. XCTest e validação em dispositivo/app hospedeiro real ainda não foram executados.
 
 ## Limitações
 

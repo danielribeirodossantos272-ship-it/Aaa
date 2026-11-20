@@ -38,4 +38,4 @@ bash Scripts/build_dylib.sh
 
 O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
 
-A build desta alteração está pendente no GitHub Actions. O CI anterior do crash fix passou em [GitHub Actions #44648702004](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44648702004), mas não inclui esta nova aba nem o botão flutuante. XCTest e execução em iPhone/app hospedeiro real ainda não foram realizados.
+A build desta versão passou no GitHub Actions [#44654581512](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44654581512), compilando as variantes arm64 de iPhone e simulador e validando os entrypoints e a ponte de runtime. XCTest e execução em iPhone/app hospedeiro real ainda não foram realizados.
