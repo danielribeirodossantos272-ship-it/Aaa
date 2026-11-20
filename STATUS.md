@@ -1,19 +1,22 @@
 # Status da entrega
 
-## Implementado no código-fonte
+## Implementado
 
-O produto dinâmico `FLEXReplicaCore` contém o browser de runtime, o painel SwiftUI, o entrypoint C `FLEXReplicaShowMenu()` e três abas: **Views**, **Classes** e **Object**. A aba Views mostra a hierarquia de `UIView`; selecionar uma linha preenche o inspetor de objeto. O painel também inclui busca de classes, detalhes de métodos/propriedades, opacidade persistente e botão Close.
+O produto dinâmico `FLEXReplicaCore` contém o browser de runtime, o painel SwiftUI, o entrypoint C `FLEXReplicaShowMenu()` e as abas **Views**, **Classes** e **Object**. O painel inclui hierarquia de `UIView`, seleção de objetos, métodos/propriedades, opacidade persistente e botão Close. O inicializador tenta apresentar o painel uma vez depois que o app hospedeiro fica ativo.
 
-Um constructor Objective-C no target da dylib tenta apresentar o painel uma única vez quando a biblioteca é carregada. Ele espera o app hospedeiro ficar ativo e ter uma janela em primeiro plano. A função manual continua disponível.
+## Diagnóstico do crash report
+
+O arquivo IPS registra `EXC_BREAKPOINT`/`SIGTRAP` na thread principal. O backtrace passa por `RuntimeBrowser.classes(matching:)`, `InspectorSession.searchClasses(_:)` e o primeiro layout SwiftUI do painel. O crash fix adiciona uma ponte Objective-C para obter nomes das classes e adia a leitura detalhada de métodos/propriedades até o usuário selecionar uma classe. A alteração foi feita somente no código da dylib; nenhuma IPA foi alterada.
 
 ## Build e validação
 
-A compilação CI do autostart desta revisão passou em [GitHub Actions #44645331833](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44645331833). O workflow compilou e empacotou as variantes arm64 de iPhone e simulador; confirmou `FLEXReplicaShowMenu` e o símbolo de retenção do initializer em ambas. Os load commands do Mach-O indicam plataforma iOS na variante device e iOS Simulator na variante de simulador, e a seção de initializer está presente. O ZIP baixado passou na verificação de integridade.
+A execução [GitHub Actions #44648702004](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44648702004) passou e gerou as variantes arm64 de iPhone e simulador. Os logs confirmam os símbolos `FLEXReplicaShowMenu`, `FLEXReplicaAutoOpenEnsureLinked` e `FLEXReplicaCopyRuntimeClassNames`. Os load commands dos artefatos indicam plataforma iOS na variante device e iOS Simulator na variante de simulador; o ZIP foi verificado com `unzip -t`.
 
-## Integração e testes pendentes
+O log contém um aviso não fatal do clang sobre sysroot MacOSX ao linkar para iPhone; a plataforma final dos dois Mach-O foi verificada separadamente.
 
-- O app hospedeiro ou um loader existente ainda precisa carregar/vincular a dylib; esta mudança não altera nem reempacota a IPA.
-- XCTest e execução visual em app hospedeiro/dispositivo real ainda não foram realizados; o autostart foi compilado e sua seção de initializer conferida, mas não executado num iPhone real.
-- A variante de simulador não deve ser incluída em IPA para iPhone.
+## Limitações pendentes
 
-A biblioteca não implementa um mecanismo para se injetar ou carregar por conta própria.
+- A correção corresponde ao caminho mostrado no stack, mas ainda não foi validada executando no iPhone ou na IPA do usuário.
+- XCTest não foi executado.
+- O app hospedeiro ou loader autorizado ainda precisa carregar/vincular a dylib e assiná-la corretamente; esta entrega não altera a IPA.
+- A variante de simulador não deve ser incluída em IPA de iPhone.
