@@ -35,6 +35,10 @@ build_dylib() {
     echo "O símbolo FLEXReplicaShowMenu não foi exportado em $variant." >&2
     exit 1
   fi
+  if ! grep -q 'FLEXReplicaInstallFloatingButton$' <<<"$symbols"; then
+    echo "O símbolo FLEXReplicaInstallFloatingButton não foi exportado em $variant." >&2
+    exit 1
+  fi
   if ! grep -q 'FLEXReplicaAutoOpenEnsureLinked$' <<<"$symbols"; then
     echo "O inicializador automático não foi ligado em $variant." >&2
     exit 1
@@ -43,7 +47,15 @@ build_dylib() {
     echo "A ponte Objective-C do runtime não foi ligada em $variant." >&2
     exit 1
   fi
-  echo "Entrypoint, autostart e ponte runtime ligados em $variant."
+  if ! grep -q 'FLEXReplicaTryGetObjectValue$' <<<"$symbols"; then
+    echo "A leitura segura de propriedades não foi ligada em $variant." >&2
+    exit 1
+  fi
+  if ! grep -q 'FLEXReplicaTrySetObjectValue$' <<<"$symbols"; then
+    echo "A escrita segura de propriedades não foi ligada em $variant." >&2
+    exit 1
+  fi
+  echo "Entrypoints do painel/botão, autostart e ponte runtime ligados em $variant."
   file "$ROOT/dist/$variant/libFLEXReplicaCore.dylib"
 }
 

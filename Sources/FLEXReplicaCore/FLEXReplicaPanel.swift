@@ -7,6 +7,7 @@ private enum FLEXReplicaSection: String, CaseIterable, Identifiable, Hashable {
     case views = "Views"
     case classes = "Classes"
     case object = "Object"
+    case patches = "Patches"
 
     var id: String { rawValue }
 }
@@ -15,10 +16,12 @@ private enum FLEXReplicaSection: String, CaseIterable, Identifiable, Hashable {
 public struct FLEXReplicaPanel: View {
     @Environment(\.dismiss) private var dismiss
     @StateObject private var session = InspectorSession()
+    @StateObject private var patchStore = FLEXReplicaPatchStore.shared
     @State private var query = "UIView"
     @State private var opacity = InspectorPreferences().panelOpacity
     @State private var showClassMethods = false
     @State private var selectedSection: FLEXReplicaSection = .views
+    @State private var propertyDrafts: [String: String] = [:]
     private let preferences = PreferencesStore()
 
     public init() {}
@@ -52,9 +55,22 @@ public struct FLEXReplicaPanel: View {
         .onAppear {
             opacity = preferences.value.panelOpacity
             session.searchClasses(query)
+            patchStore.refreshAvailability()
             #if canImport(UIKit)
             refreshViewHierarchy()
             #endif
+        }
+        .onDisappear {
+            #if canImport(UIKit)
+            FLEXReplicaFloatingButtonController.shared.setHidden(false)
+            #endif
+        }
+        .onChange(of: selectedSection) { section in
+            if section == .object {
+                session.refreshSelectedObject()
+            } else if section == .patches {
+                patchStore.refreshAvailability()
+            }
         }
         .onChange(of: opacity) { newValue in
             var value = preferences.value
@@ -101,6 +117,8 @@ public struct FLEXReplicaPanel: View {
             classBrowserSection
         case .object:
             objectInspectorSection
+        case .patches:
+            patchesSection
         }
     }
 
@@ -248,9 +266,30 @@ public struct FLEXReplicaPanel: View {
                                     Text(property.attributes)
                                         .font(.caption2.monospaced())
                                         .foregroundStyle(.tertiary)
+                                    if property.isWritable, let kind = property.editableKind {
+                                        TextField("New \(kind.label) value", text: draftBinding(for: property))
+                                            .textFieldStyle(.roundedBorder)
+                                            .autocorrectionDisabled()
+                                            .textInputAutocapitalization(.never)
+                                        Button {
+                                            let rawValue = propertyDrafts[property.id] ?? defaultDraft(for: property)
+                                            if session.createPropertyPatch(for: property, rawValue: rawValue) {
+                                                selectedSection = .patches
+                                            }
+                                        } label: {
+                                            Label("Create Patch", systemImage: "plus.circle")
+                                                .font(.caption.weight(.semibold))
+                                        }
+                                        .buttonStyle(.bordered)
+                                    }
                                 }
                                 .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                        }
+                        if let error = session.patchActionError {
+                            Text(error)
+                                .font(.caption)
+                                .foregroundStyle(.red)
                         }
 
                         detailSection(title: "Ivars (\(object.fields.count))") {
@@ -271,6 +310,52 @@ public struct FLEXReplicaPanel: View {
                 emptyState("Select a view in the Views tab to inspect its object", symbol: "cube.transparent")
             }
         }
+    }
+
+    private var patchesSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Temporary property overrides")
+                .font(.subheadline.weight(.semibold))
+            Text("Patches affect one selected object in this running app. They stay in memory and can be restored here.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            if let error = session.patchActionError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            if patchStore.patches.isEmpty {
+                emptyState("No patches yet — select an object and create one", symbol: "switch.2")
+            } else {
+                ScrollView {
+                    VStack(spacing: 8) {
+                        ForEach(patchStore.patches) { patch in
+                            PropertyPatchRow(patch: patch,
+                                             onToggle: { isActive in
+                                                 _ = session.setPatchActive(isActive, for: patch)
+                                             },
+                                             onRemove: {
+                                                 _ = session.removePatch(patch)
+                                             })
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    private func defaultDraft(for property: InspectedProperty) -> String {
+        property.valueDescription == "nil" ? "" : property.valueDescription
+    }
+
+    private func draftBinding(for property: InspectedProperty) -> Binding<String> {
+        Binding(
+            get: { propertyDrafts[property.id] ?? defaultDraft(for: property) },
+            set: { propertyDrafts[property.id] = $0 }
+        )
     }
 
     private func detailSection<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
@@ -351,6 +436,50 @@ private struct ViewNodeRow: View {
             .buttonStyle(.plain)
         }
         .font(.caption)
+    }
+}
+
+@MainActor
+private struct PropertyPatchRow: View {
+    @ObservedObject var patch: FLEXReplicaPropertyPatch
+    let onToggle: (Bool) -> Void
+    let onRemove: () -> Void
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(patch.title)
+                    .font(.caption.monospaced().weight(.semibold))
+                    .lineLimit(2)
+                Text("\(patch.originalValue.displayValue)  →  \(patch.replacementValue.displayValue)")
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                Text("\(patch.className) · \(patch.objectAddress)")
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                if let error = patch.lastError {
+                    Text(error)
+                        .font(.caption2)
+                        .foregroundStyle(.red)
+                }
+            }
+            Spacer(minLength: 0)
+            Toggle("Active", isOn: Binding(
+                get: { patch.isActive },
+                set: { onToggle($0) }
+            ))
+            .labelsHidden()
+            Button(role: .destructive, action: onRemove) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.bordered)
+            .accessibilityLabel("Remove patch")
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
     }
 }
 #endif

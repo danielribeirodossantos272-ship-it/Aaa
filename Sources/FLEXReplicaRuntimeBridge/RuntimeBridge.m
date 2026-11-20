@@ -24,3 +24,28 @@ NSArray<NSString *> *FLEXReplicaCopyRuntimeClassNames(void) {
     [names sortUsingSelector:@selector(compare:)];
     return [names copy];
 }
+
+BOOL FLEXReplicaTryGetObjectValue(id object, NSString *key, id __autoreleasing *valueOut) {
+    if (object == nil || key.length == 0 || valueOut == NULL) {
+        return NO;
+    }
+    *valueOut = nil;
+    @try {
+        *valueOut = [object valueForKey:key];
+        return YES;
+    } @catch (__unused NSException *exception) {
+        return NO;
+    }
+}
+
+BOOL FLEXReplicaTrySetObjectValue(id object, NSString *key, id value) {
+    if (object == nil || key.length == 0) {
+        return NO;
+    }
+    @try {
+        [object setValue:value forKey:key];
+        return YES;
+    } @catch (__unused NSException *exception) {
+        return NO;
+    }
+}

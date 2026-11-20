@@ -3,14 +3,14 @@
 #import <dispatch/dispatch.h>
 #import "FLEXReplicaAutoOpen.h"
 
-extern void FLEXReplicaShowMenu(void);
+extern void FLEXReplicaInstallFloatingButton(void);
 
-static BOOL gFLEXReplicaDidRequestMenu = NO;
+static BOOL gFLEXReplicaDidInstallButton = NO;
 static NSUInteger gFLEXReplicaRetries = 0;
 static id gFLEXReplicaApplicationObserver = nil;
 static id gFLEXReplicaSceneObserver = nil;
 
-static void FLEXReplicaTryAutoOpen(void);
+static void FLEXReplicaTryInstallButton(void);
 
 static BOOL FLEXReplicaHasForegroundKeyWindow(void) {
     UIApplication *application = [UIApplication sharedApplication];
@@ -54,7 +54,7 @@ static void FLEXReplicaInstallObservers(void) {
                          queue:[NSOperationQueue mainQueue]
                     usingBlock:^(__unused NSNotification *notification) {
             gFLEXReplicaRetries = 0;
-            FLEXReplicaTryAutoOpen();
+            FLEXReplicaTryInstallButton();
         }];
     }
     if (gFLEXReplicaSceneObserver == nil) {
@@ -64,13 +64,13 @@ static void FLEXReplicaInstallObservers(void) {
                          queue:[NSOperationQueue mainQueue]
                     usingBlock:^(__unused NSNotification *notification) {
             gFLEXReplicaRetries = 0;
-            FLEXReplicaTryAutoOpen();
+            FLEXReplicaTryInstallButton();
         }];
     }
 }
 
-static void FLEXReplicaTryAutoOpen(void) {
-    if (gFLEXReplicaDidRequestMenu) {
+static void FLEXReplicaTryInstallButton(void) {
+    if (gFLEXReplicaDidInstallButton) {
         return;
     }
     if (!FLEXReplicaHasForegroundKeyWindow()) {
@@ -79,22 +79,22 @@ static void FLEXReplicaTryAutoOpen(void) {
             gFLEXReplicaRetries += 1;
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.25 * NSEC_PER_SEC)),
                            dispatch_get_main_queue(), ^{
-                FLEXReplicaTryAutoOpen();
+                FLEXReplicaTryInstallButton();
             });
         }
         return;
     }
 
-    gFLEXReplicaDidRequestMenu = YES;
+    gFLEXReplicaDidInstallButton = YES;
     FLEXReplicaStopObserving();
-    FLEXReplicaShowMenu();
+    FLEXReplicaInstallFloatingButton();
 }
 
 __attribute__((constructor))
-static void FLEXReplicaAutoOpenWhenLoaded(void) {
+static void FLEXReplicaInstallButtonWhenLoaded(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         FLEXReplicaInstallObservers();
-        FLEXReplicaTryAutoOpen();
+        FLEXReplicaTryInstallButton();
     });
 }
 

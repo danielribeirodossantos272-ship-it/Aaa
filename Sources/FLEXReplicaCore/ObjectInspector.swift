@@ -2,6 +2,9 @@ import Foundation
 #if canImport(ObjectiveC)
 import ObjectiveC.runtime
 #endif
+#if canImport(FLEXReplicaRuntimeBridge)
+import FLEXReplicaRuntimeBridge
+#endif
 
 public struct InspectedField: Identifiable, Hashable, Sendable {
     public let id: String
@@ -15,6 +18,8 @@ public struct InspectedProperty: Identifiable, Hashable, Sendable {
     public let name: String
     public let attributes: String
     public let valueDescription: String
+    public let isWritable: Bool
+    public let editableKind: FLEXReplicaPropertyValueKind?
 }
 
 public struct ObjectSnapshot: Sendable {
@@ -81,16 +86,52 @@ public final class ObjectInspector {
                     guard seen.insert(name).inserted else { continue }
                     guard let attributesPointer = property_getAttributes(property) else { continue }
                     let attributes = String(cString: attributesPointer)
+                    let writable = !attributes.split(separator: ",").contains("R")
+                    let kind = writable ? editableKind(from: attributes) : nil
                     let candidates = ["_\(name)", name]
                     let fieldValue = fields.first { candidates.contains($0.name) }?.valueDescription ?? "<accessor not read>"
-                    result.append(InspectedProperty(id: "\(NSStringFromClass(type))::\(name)", name: name,
-                                                     attributes: attributes, valueDescription: fieldValue))
+                    let valueDescription = safePropertyDescription(object: object, name: name) ?? fieldValue
+                    result.append(InspectedProperty(id: "\(NSStringFromClass(type))::\(name)",
+                                                     name: name,
+                                                     attributes: attributes,
+                                                     valueDescription: valueDescription,
+                                                     isWritable: writable && kind != nil,
+                                                     editableKind: kind))
                 }
                 free(properties)
             }
             current = class_getSuperclass(type)
         }
         return result.sorted { $0.name < $1.name }
+    }
+
+    private func editableKind(from attributes: String) -> FLEXReplicaPropertyValueKind? {
+        guard let typeAttribute = attributes.split(separator: ",").first,
+              typeAttribute.first == "T" else { return nil }
+        let encoding = String(typeAttribute.dropFirst())
+        if encoding == "@\"NSString\"" || encoding == "@\"NSMutableString\"" {
+            return .string
+        }
+        if encoding == "@\"NSNumber\"" {
+            return .number
+        }
+        if encoding == "B" {
+            return .boolean
+        }
+        if ["c", "C", "s", "S", "i", "I", "l", "L", "q", "Q", "f", "d"].contains(encoding) {
+            return .number
+        }
+        return nil
+    }
+
+    private func safePropertyDescription(object: AnyObject, name: String) -> String? {
+        #if canImport(FLEXReplicaRuntimeBridge)
+        var value: AnyObject?
+        guard FLEXReplicaTryGetObjectValue(object, name as NSString, &value) else { return nil }
+        return value.map { String(describing: $0) } ?? "nil"
+        #else
+        return nil
+        #endif
     }
 
     private func safeIvarDescription(object: AnyObject, ivar: Ivar, encoding: String) -> String {
