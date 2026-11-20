@@ -8,12 +8,12 @@ Um constructor Objective-C no target da dylib tenta apresentar o painel uma úni
 
 ## Build e validação
 
-A compilação CI do autostart desta revisão está pendente. O build anterior aprovou o painel expandido, mas não contém o constructor automático; não o tratar como validação desta alteração.
+A compilação CI do autostart desta revisão passou em [GitHub Actions #44645331833](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44645331833). O workflow compilou e empacotou as variantes arm64 de iPhone e simulador; confirmou `FLEXReplicaShowMenu` e o símbolo de retenção do initializer em ambas. Os load commands do Mach-O indicam plataforma iOS na variante device e iOS Simulator na variante de simulador, e a seção de initializer está presente. O ZIP baixado passou na verificação de integridade.
 
 ## Integração e testes pendentes
 
 - O app hospedeiro ou um loader existente ainda precisa carregar/vincular a dylib; esta mudança não altera nem reempacota a IPA.
-- XCTest e execução visual em app hospedeiro/dispositivo real ainda não foram realizados.
+- XCTest e execução visual em app hospedeiro/dispositivo real ainda não foram realizados; o autostart foi compilado e sua seção de initializer conferida, mas não executado num iPhone real.
 - A variante de simulador não deve ser incluída em IPA para iPhone.
 
 A biblioteca não implementa um mecanismo para se injetar ou carregar por conta própria.

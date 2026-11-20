@@ -23,4 +23,4 @@ bash Scripts/build_dylib.sh
 
 O script produz `dist/ios-device-arm64/libFLEXReplicaCore.dylib` e `dist/ios-simulator-arm64/libFLEXReplicaCore.dylib`, cada variante acompanhada pelo header `FLEXReplicaCore.h`. Para uma IPA de iPhone, somente a variante de dispositivo é aplicável. O app-demo está disponível separadamente via `bash Scripts/build_ios.sh`.
 
-A validação CI da nova inicialização automática está pendente. XCTest e execução visual em um app hospedeiro real não são afirmados como aprovados.
+A build CI da nova inicialização automática passou: [GitHub Actions #44645331833](https://github.com/danielribeirodossantos272-ship-it/Aaa/actions/runs/44645331833). O runner compilou device e simulador e confirmou o entrypoint e o símbolo de retenção do initializer. Os Mach-O registram platform iOS e iOS Simulator, respectivamente. XCTest e execução visual em um app hospedeiro real não foram realizados.
